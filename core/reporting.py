@@ -103,6 +103,9 @@ def generate_summary_report(results: EvaluationResults) -> str:
     Returns:
         Markdown-formatted report string
     """
+    if not results.items:
+        return "# Evaluation Summary Report\n\nNo evaluation results to summarize."
+
     report_lines = []
     
     # Header
@@ -276,6 +279,9 @@ def export_detailed_analysis(
         output_path: Path to save the analysis
         include_all_items: Whether to include all items or just failures
     """
+    if not results.items:
+        raise ValueError("No evaluation items to export.")
+
     with open(output_path, 'w') as f:
         # Write summary
         f.write(generate_summary_report(results))

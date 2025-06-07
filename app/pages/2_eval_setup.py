@@ -5,7 +5,10 @@ import streamlit as st
 import pandas as pd
 from typing import List, Dict, Any
 import asyncio
+import nest_asyncio
 from io import StringIO
+
+nest_asyncio.apply()
 
 from core.ingestion import load_evaluation_data, validate_csv_columns
 from core.generation import generate_outputs

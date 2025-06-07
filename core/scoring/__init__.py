@@ -1,47 +1,8 @@
-"""
-Scoring module containing various evaluation scorers.
-"""
-from typing import Dict, Any, Type, Optional
-from abc import ABC, abstractmethod
+"""Scoring module containing various evaluation scorers."""
 
-from core.data_models import EvaluationItem, ScorerResult
+from typing import Dict, Any, Type
 
-
-class BaseScorer(ABC):
-    """Abstract base class for all scorers."""
-    
-    def __init__(self, config: Dict[str, Any] = None):
-        """
-        Initialize the scorer with configuration.
-        
-        Args:
-            config: Scorer-specific configuration
-        """
-        self.config = config or {}
-    
-    @abstractmethod
-    def score(self, item: EvaluationItem) -> ScorerResult:
-        """
-        Score an evaluation item.
-        
-        Args:
-            item: The evaluation item to score
-        
-        Returns:
-            ScorerResult with score and details
-        """
-        pass
-    
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """Return the name of this scorer."""
-        pass
-    
-    @property
-    def description(self) -> str:
-        """Return a description of this scorer."""
-        return f"{self.name} scorer"
+from core.scoring.base import BaseScorer
 
 
 # Import specific scorers - do this after BaseScorer is defined

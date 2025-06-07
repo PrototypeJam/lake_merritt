@@ -4,7 +4,7 @@ Fuzzy match scorer - uses string similarity algorithms to score matches.
 from fuzzywuzzy import fuzz
 from typing import Dict, Any
 
-from core.scoring import BaseScorer
+from core.scoring.base import BaseScorer
 from core.data_models import EvaluationItem, ScorerResult
 
 
