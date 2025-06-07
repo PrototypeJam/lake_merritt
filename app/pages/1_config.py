@@ -9,8 +9,6 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-st.set_page_config(page_title="System Configuration", page_icon="\u2699\uFE0F", layout="wide")
-
 st.title("\u2699\uFE0F System & Model Configuration")
 st.markdown("Configure API keys and default model parameters for evaluations.")
 
