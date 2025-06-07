@@ -17,8 +17,6 @@ from core.data_models import EvaluationItem, EvaluationMode
 from core.scoring import get_available_scorers
 from services.llm_clients import create_llm_client
 
-st.set_page_config(page_title="Evaluation Setup", page_icon="📄", layout="wide")
-
 st.title("📄 Evaluation Setup")
 st.markdown("Upload data, configure evaluation mode, and select scoring methods.")
 

@@ -14,8 +14,6 @@ from core.reporting import (
     generate_summary_report,
 )
 
-st.set_page_config(page_title="Download Center", page_icon="⬇️", layout="wide")
-
 st.title("⬇️ Download Center")
 st.markdown("Export evaluation results and related artifacts.")
 

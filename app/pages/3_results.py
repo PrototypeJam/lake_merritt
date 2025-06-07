@@ -6,8 +6,6 @@ import pandas as pd
 import json
 from typing import Dict, Any, List
 
-st.set_page_config(page_title="Evaluation Results", page_icon="📊", layout="wide")
-
 st.title("📊 Evaluation Results")
 st.markdown("Analyze evaluation outcomes and explore detailed scoring information.")
 
