@@ -134,8 +134,13 @@ class NormalizedExactMatchScorer(BaseScorer):
         text = text.strip()
         
         # Normalize common punctuation
-        text = text.replace('"', '"').replace('"', '"')  # Smart quotes
-        text = text.replace('\u2019', "'").replace('\u2018', "'")  # Smart apostrophes
+        # Replace smart quotes/apostrophes with straight ones
+        text = (
+            text.replace('\u201c', '"')
+            .replace('\u201d', '"')
+            .replace('\u2019', "'")
+            .replace('\u2018', "'")
+        )
         
         # Remove trailing punctuation if configured
         if self.config.get("ignore_trailing_punctuation", False):
