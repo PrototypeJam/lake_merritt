@@ -1,4 +1,13 @@
-"""AI Evaluation Workbench - Main Application Entry Point"""
+# python -m venv venv
+# source venv/bin/activate
+# pip install -r requirements.txt
+# pip install --upgrade pip
+# streamlit run streamlit_app.py
+
+
+"""
+AI Evaluation Workbench - Main Application Entry Point
+"""
 import streamlit as st
 from pathlib import Path
 import sys
