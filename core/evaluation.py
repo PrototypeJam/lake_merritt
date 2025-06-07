@@ -219,4 +219,3 @@ async def run_evaluation_batch(
     
     logger.info(f"Batch evaluation completed in {duration:.2f} seconds")
     return results
-
