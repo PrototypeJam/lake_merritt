@@ -26,8 +26,8 @@ class LLMJudgeScorer(BaseScorer):
         self.api_key = self.config.get("api_key")
         self.threshold = self.config.get("threshold", 0.7)
 
-        # Create LLM client
-        self.client = create_llm_client(self.provider, self.api_key)
+        # LLM client is lazily created on first use
+        self.client = None
 
     @property
     def name(self) -> str:
@@ -59,6 +59,9 @@ Respond in JSON format:
 
     async def score(self, item: EvaluationItem) -> ScorerResult:
         """Score an item using LLM judgment."""
+        if self.client is None:
+            self.client = create_llm_client(self.provider, self.api_key)
+
         if item.output is None:
             return ScorerResult(
                 scorer_name="llm_judge",
@@ -187,6 +190,9 @@ class StructuredLLMJudgeScorer(LLMJudgeScorer):
 
     async def score(self, item: EvaluationItem) -> ScorerResult:
         """Score using structured output capabilities."""
+        if self.client is None:
+            self.client = create_llm_client(self.provider, self.api_key)
+
         if item.output is None:
             return ScorerResult(
                 scorer_name="structured_llm_judge",
