@@ -157,7 +157,7 @@ class TestNormalizedExactMatchScorer:
         scorer = NormalizedExactMatchScorer()
         item = EvaluationItem(
             input="Test",
-            output=""Hello World"",  # Smart quotes
+            output="\u201cHello World\u201d",  # Smart quotes
             expected_output='"Hello World"'    # Regular quotes
         )
         
@@ -171,7 +171,7 @@ class TestNormalizedExactMatchScorer:
         scorer = NormalizedExactMatchScorer()
         item = EvaluationItem(
             input="Test",
-            output="It's working",     # Smart apostrophe
+            output="It\u2019s working",     # Smart apostrophe
             expected_output="It's working"  # Regular apostrophe
         )
         
