@@ -1,7 +1,7 @@
 """
 Exact match scorer - checks if output exactly matches expected output.
 """
-from core.scoring import BaseScorer
+from core.scoring.base import BaseScorer
 from core.data_models import EvaluationItem, ScorerResult
 
 

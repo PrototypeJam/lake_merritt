@@ -16,7 +16,7 @@ setup_logging()
 # Page configuration
 st.set_page_config(
     page_title="AI Evaluation Workbench",
-    page_icon="\U0001F52C",
+    page_icon="🔬",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -32,7 +32,7 @@ if "initialized" not in st.session_state:
     st.session_state.run_metadata = {}
 
 # Main page content
-st.title("\U0001F52C AI Evaluation Workbench")
+st.title("🔬 AI Evaluation Workbench")
 st.markdown("---")
 
 col1, col2 = st.columns([2, 1])

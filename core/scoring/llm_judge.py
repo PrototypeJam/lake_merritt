@@ -6,7 +6,7 @@ import asyncio
 import logging
 from typing import Dict, Any, Optional
 
-from core.scoring import BaseScorer
+from core.scoring.base import BaseScorer
 from core.data_models import EvaluationItem, ScorerResult
 from services.llm_clients import create_llm_client
 
