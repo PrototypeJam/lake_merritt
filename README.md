@@ -16,10 +16,10 @@ ai-eval-workbench/
 │  ├─ __init__.py
 │  ├─ state.py             # helpers for st.session_state
 │  └─ pages/
-│     ├─ 1_⚙️_config.py
-│     ├─ 2_📄_eval_setup.py
-│     ├─ 3_📊_results.py
-│     └─ 4_⬇️_downloads.py
+│     ├─ 1_config.py
+│     ├─ 2_eval_setup.py
+│     ├─ 3_results.py
+│     └─ 4_downloads.py
 │
 ├─ core/                   # pure Python “business logic”
 │  ├─ __init__.py
@@ -65,10 +65,10 @@ ai-eval-workbench/
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | `streamlit_app.py`                 | `streamlit run` entrypoint. Imports `app.pages.*`; holds nothing else.                                                 | Keeps CLI simple and unopinionated.                           |
 | **`app/state.py`**                 | Typed wrappers around `st.session_state` (config, uploaded data, results).                                             | Avoids raw string keys scattered across pages.                |
-| **`app/pages/1_⚙️_config.py`**     | Page 1 UI: API keys, default judge model params. Writes to `state`.                                                    | Validate keys immediately with ping-call (optional).          |
-| **`app/pages/2_📄_eval_setup.py`** | Page 2 UI: Mode A vs B, file upload, scorer & actor selection, “Start Evaluation”.                                     | Delegates all heavy lifting to `core`.                        |
-| **`app/pages/3_📊_results.py`**    | Reads `state.results`; shows KPI cards, `st.dataframe`, expandable JSON reasoning.                                     | Charts via `st.altair_chart` or Plotly later.                 |
-| **`app/pages/4_⬇️_downloads.py`**  | Builds CSV/JSON bytes from `core.reporting`; exposes `st.download_button`.                                             | Future placeholders for logs/traces.                          |
+| **`app/pages/1_config.py`**     | Page 1 UI: API keys, default judge model params. Writes to `state`.                                                    | Validate keys immediately with ping-call (optional).          |
+| **`app/pages/2_eval_setup.py`** | Page 2 UI: Mode A vs B, file upload, scorer & actor selection, “Start Evaluation”.                                     | Delegates all heavy lifting to `core`.                        |
+| **`app/pages/3_results.py`**    | Reads `state.results`; shows KPI cards, `st.dataframe`, expandable JSON reasoning.                                     | Charts via `st.altair_chart` or Plotly later.                 |
+| **`app/pages/4_downloads.py`**  | Builds CSV/JSON bytes from `core.reporting`; exposes `st.download_button`.                                             | Future placeholders for logs/traces.                          |
 | **`core/data_models.py`**          | Pydantic classes: `EvalRecord`, `Score`, `RunMetadata`, `RunResult`.                                                   | Single-source schema for I/O, scoring, reporting.             |
 | **`core/ingestion.py`**            | Validates uploaded CSV, maps to `List[EvalRecord]`.                                                                    | Raises rich `pydantic.ValidationError` for UI display.        |
 | **`core/generation.py`**           | For Mode B: loops through records, calls selected LLM client, fills `output`.                                          | Async aware; supports batch calls.                            |
