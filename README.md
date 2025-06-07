@@ -1,105 +1,97 @@
-Below is a **concrete, high-level implementation plan**—directory tree first, then concise notes on the purpose and key contents of every file or sub-package.  This should give you everything you need to scaffold the repo and start filling in modules incrementally.
+# AI Evaluation Workbench
 
----
+A general-purpose, modular, and extensible platform for evaluating AI models and applications, primarily Large Language Models (LLMs).
 
-## 1 Directory / File Layout
+## Overview
 
-```
-ai-eval-workbench/
-├─ README.md
-├─ pyproject.toml          # Poetry (or hatch) – dep mgmt, tool config
-├─ requirements.txt        # fallback for pip-install
-├─ .env.template           # names of env vars (API keys etc.)
-├─ streamlit_app.py        # thin launcher → pages/
-│
-├─ app/                    # Streamlit UI layer only
-│  ├─ __init__.py
-│  ├─ state.py             # helpers for st.session_state
-│  └─ pages/
-│     ├─ 1_config.py
-│     ├─ 2_eval_setup.py
-│     ├─ 3_results.py
-│     └─ 4_downloads.py
-│
-├─ core/                   # pure Python “business logic”
-│  ├─ __init__.py
-│  ├─ data_models.py       # Pydantic objects for everything
-│  ├─ ingestion.py         # CSV → List[EvalRecord]
-│  ├─ generation.py        # model “actor” output creation
-│  ├─ evaluation.py        # orchestration: run_scorers()
-│  ├─ reporting.py         # summary stats, JSON/CSV writers
-│  ├─ logging_config.py
-│  └─ scoring/             # pluggable scorers live here
-│      ├─ __init__.py
-│      ├─ exact_match.py
-│      ├─ fuzzy_match.py
-│      └─ llm_judge.py
-│
-├─ services/               # external integrations
-│  ├─ __init__.py
-│  └─ llm_clients.py       # OpenAI, Anthropic, Gemini wrappers
-│
-├─ utils/
-│  ├─ __init__.py
-│  ├─ file_cache.py        # simple disk cache for rate-limit relief
-│  └─ telemetry.py         # placeholder OpenTelemetry hooks
-│
-├─ tests/
-│  ├─ unit/
-│  │   └─ test_exact_match.py …
-│  └─ integration/
-│      └─ test_end_to_end.py
-│
-└─ .github/
-    └─ workflows/
-        └─ ci.yml          # lint, unit tests
+This platform provides a standardized yet flexible environment for:
+- Configuring evaluation parameters and models
+- Uploading evaluation datasets or generating model outputs
+- Applying multiple scoring methods (exact match, fuzzy match, LLM-as-a-Judge)
+- Analyzing results through intuitive visualizations
+- Comparing performance across different models and configurations
+
+## Features
+
+### Current (v0)
+- **Mode A**: Evaluate existing model outputs against expected outputs
+- **Mode B**: Generate outputs from an Actor LLM, then evaluate
+- Multiple scoring methods with configurable parameters
+- Streamlit-based UI with session state management
+- Support for CSV data import/export
+- Modular architecture for easy extension
+
+### Planned
+- Cross-run analysis and comparison
+- Live system monitoring via OpenTelemetry
+- Enhanced LLM-as-a-Judge configuration
+- Prompt versioning and management
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/ai-eval-workbench.git
+cd ai-eval-workbench
 ```
 
-*(Emoji prefixes in `pages/` keep Streamlit tabs ordered.)*
+2. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
 
----
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-## 2 Module Responsibilities
+4. Copy `.env.template` to `.env` and add your API keys:
+```bash
+cp .env.template .env
+```
 
-| Path                               | Core Responsibility                                                                                                    | Implementation Notes                                          |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `streamlit_app.py`                 | `streamlit run` entrypoint. Imports `app.pages.*`; holds nothing else.                                                 | Keeps CLI simple and unopinionated.                           |
-| **`app/state.py`**                 | Typed wrappers around `st.session_state` (config, uploaded data, results).                                             | Avoids raw string keys scattered across pages.                |
-| **`app/pages/1_config.py`**     | Page 1 UI: API keys, default judge model params. Writes to `state`.                                                    | Validate keys immediately with ping-call (optional).          |
-| **`app/pages/2_eval_setup.py`** | Page 2 UI: Mode A vs B, file upload, scorer & actor selection, “Start Evaluation”.                                     | Delegates all heavy lifting to `core`.                        |
-| **`app/pages/3_results.py`**    | Reads `state.results`; shows KPI cards, `st.dataframe`, expandable JSON reasoning.                                     | Charts via `st.altair_chart` or Plotly later.                 |
-| **`app/pages/4_downloads.py`**  | Builds CSV/JSON bytes from `core.reporting`; exposes `st.download_button`.                                             | Future placeholders for logs/traces.                          |
-| **`core/data_models.py`**          | Pydantic classes: `EvalRecord`, `Score`, `RunMetadata`, `RunResult`.                                                   | Single-source schema for I/O, scoring, reporting.             |
-| **`core/ingestion.py`**            | Validates uploaded CSV, maps to `List[EvalRecord]`.                                                                    | Raises rich `pydantic.ValidationError` for UI display.        |
-| **`core/generation.py`**           | For Mode B: loops through records, calls selected LLM client, fills `output`.                                          | Async aware; supports batch calls.                            |
-| **`core/scoring/*`**               | One module per scorer. All expose `def score(record: EvalRecord, cfg: Any) -> Score`.                                  | Register in `scoring.__init__` for dynamic listing.           |
-| **`core/evaluation.py`**           | `run_evaluation(records, scorer_cfgs) -> RunResult`. Handles concurrency, retries, logging.                            | Keeps Streamlit thread clear; progress reported via callback. |
-| **`core/reporting.py`**            | Aggregate stats → dict, plus `to_csv()` / `to_json()`.                                                                 | Consumed by UI & download page.                               |
-| **`services/llm_clients.py`**      | Thin, typed wrappers around vendor SDKs. Standard interface: `generate(prompt, **params)`; `evaluate()` for judge LLM. | Centralizes retry logic, rate limits, exponential back-off.   |
-| **`utils/file_cache.py`**          | Optional local caching for expensive LLM calls (dev mode).                                                             | Simple JSON-on-disk keyed by hash of call.                    |
-| **`utils/telemetry.py`**           | Early placeholder to push OpenTelemetry spans.                                                                         | Keeps traces optional but path-ready.                         |
-| **`logging_config.py`**            | Configures struct-log / standard logging for entire project.                                                           | Import first in `streamlit_app.py`.                           |
-| **`tests/`**                       | Pytest suites. Unit tests for every scorer; integration test covers Mode A pipeline with fixtures.                     | CI fails fast on scoring regressions.                         |
-| **CI workflow**                    | Lint (`ruff` + `mypy`), run tests.                                                                                     | Container step can later run Streamlit e2e with Playwright.   |
+## Usage
 
----
+Run the Streamlit app:
+```bash
+streamlit run streamlit_app.py
+```
 
-## 3 Extensibility & Future Features Hooks
+Navigate through the pages:
+1. **System Configuration**: Set up API keys and default model parameters
+2. **Evaluation Setup**: Upload data, select scoring methods, and run evaluations
+3. **View Results**: Analyze evaluation outcomes and detailed scores
+4. **Download Center**: Export results in various formats
 
-* **New scorer drop-in:** put a `*.py` under `core/scoring/`, define `score()`, add to `__all__` list—UI auto-picks it up because `scoring.list_scorers()` enumerates the modules.
-* **Persisted runs & cross-run analytics:** `RunResult` already serializes cleanly; simply store JSON in `/runs/` or a DB.  A future page could load multiple `RunResult` files and feed them to a Plotly comparison view.
-* **OpenTelemetry stream:** `utils.telemetry.trace_llm_call()` is invoked in `services.llm_clients.*`.  Switching to a real OTLP exporter later is configuration only.
-* **API backend alternative:** If you later need a headless service, everything under `core/` is UI-agnostic.  Wrap it in FastAPI without touching Streamlit pages.
+## Data Format
 
----
+For Mode A (evaluate existing outputs), your CSV should have:
+- `input`: The prompt/input given to the model
+- `output`: The model's actual output
+- `expected_output`: The ideal/correct output
+- `id` (optional): Unique identifier for each row
 
-## 4 Immediate Next Steps
+For Mode B (generate then evaluate), your CSV needs only:
+- `input`: The prompt/input for the model
+- `expected_output`: The ideal/correct output
 
-1. **Scaffold repo** with the tree above (`cookiecutter` or `copier` template).
-2. Implement **data models** and **exact-match scorer** first—fastest path to an end-to-end “Hello World” evaluation.
-3. Add **fuzzy scorer** (pure Python `python-Levenshtein`).
-4. Wire **Streamlit pages** minimally to ingest CSV and call `evaluation.run_evaluation`.
-5. Layer in **LLM clients** and **LLM-judge scorer** once the plaintext path is solid.
-6. Harden with **unit tests + CI** before tackling Mode B generation.
+## Architecture
 
-Feel free to ask for deeper dives on any module, detailed class signatures, or a cookiecutter template.
+The project follows a modular architecture:
+- `app/`: Streamlit UI layer
+- `core/`: Business logic and evaluation orchestration
+- `services/`: External API integrations (LLM providers)
+- `utils/`: Helper utilities
+
+## Contributing
+
+This project emphasizes deep modularity. When adding new features:
+1. Scorers go in `core/scoring/`
+2. LLM providers extend `services/llm_clients.py`
+3. UI pages go in `app/pages/`
+4. All data structures should be defined as Pydantic models in `core/data_models.py`
+
+## License
+
+MIT License - see LICENSE file for details
