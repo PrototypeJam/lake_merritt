@@ -8,6 +8,20 @@ from datetime import datetime
 from enum import Enum
 
 
+class EvalRecord(BaseModel):
+    """Backward-compatible record for tests."""
+
+    prompt: str
+    expected: str
+    output: Optional[str] = None
+
+
+class Score(BaseModel):
+    """Simple score wrapper used in legacy scorers."""
+
+    value: float = Field(..., ge=0.0, le=1.0)
+
+
 class EvaluationMode(str, Enum):
     """Evaluation modes supported by the system."""
     EVALUATE_EXISTING = "evaluate_existing"
