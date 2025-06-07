@@ -1,52 +1,124 @@
-"""Scoring modules."""
-from importlib import import_module
-from typing import Any, Callable, Dict
+"""
+Scoring module containing various evaluation scorers.
+"""
+from typing import Dict, Any, Type
+from abc import ABC, abstractmethod
+
+from core.data_models import EvaluationItem, ScorerResult
+
+
+class BaseScorer(ABC):
+    """Abstract base class for all scorers."""
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        """
+        Initialize the scorer with configuration.
+        
+        Args:
+            config: Scorer-specific configuration
+        """
+        self.config = config or {}
+    
+    @abstractmethod
+    def score(self, item: EvaluationItem) -> ScorerResult:
+        """
+        Score an evaluation item.
+        
+        Args:
+            item: The evaluation item to score
+        
+        Returns:
+            ScorerResult with score and details
+        """
+        pass
+    
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """Return the name of this scorer."""
+        pass
+    
+    @property
+    def description(self) -> str:
+        """Return a description of this scorer."""
+        return f"{self.name} scorer"
+
+
+# Import specific scorers
+from core.scoring.exact_match import ExactMatchScorer
+from core.scoring.fuzzy_match import FuzzyMatchScorer
+from core.scoring.llm_judge import LLMJudgeScorer
+
+
+# Registry of available scorers
+SCORER_REGISTRY: Dict[str, Type[BaseScorer]] = {
+    "exact_match": ExactMatchScorer,
+    "fuzzy_match": FuzzyMatchScorer,
+    "llm_judge": LLMJudgeScorer,
+}
+
+
+def get_available_scorers() -> Dict[str, Dict[str, Any]]:
+    """
+    Get information about all available scorers.
+    
+    Returns:
+        Dictionary mapping scorer names to their information
+    """
+    scorers_info = {}
+    
+    for name, scorer_class in SCORER_REGISTRY.items():
+        scorer = scorer_class()
+        scorers_info[name] = {
+            "class": scorer_class,
+            "display_name": scorer.name,
+            "description": scorer.description,
+        }
+    
+    return scorers_info
+
+
+def create_scorer(name: str, config: Dict[str, Any] = None) -> BaseScorer:
+    """
+    Create a scorer instance by name.
+    
+    Args:
+        name: Name of the scorer
+        config: Configuration for the scorer
+    
+    Returns:
+        Scorer instance
+    
+    Raises:
+        ValueError: If scorer name is not found
+    """
+    if name not in SCORER_REGISTRY:
+        raise ValueError(f"Unknown scorer: {name}. Available: {list(SCORER_REGISTRY.keys())}")
+    
+    scorer_class = SCORER_REGISTRY[name]
+    return scorer_class(config)
+
+
+def register_scorer(name: str, scorer_class: Type[BaseScorer]) -> None:
+    """
+    Register a new scorer class.
+    
+    Args:
+        name: Name to register the scorer under
+        scorer_class: The scorer class
+    """
+    if not issubclass(scorer_class, BaseScorer):
+        raise TypeError("Scorer class must inherit from BaseScorer")
+    
+    SCORER_REGISTRY[name] = scorer_class
+
 
 __all__ = [
     "BaseScorer",
-    "create_scorer",
+    "ExactMatchScorer",
+    "FuzzyMatchScorer",
+    "LLMJudgeScorer",
     "get_available_scorers",
-    "exact_match",
-    "fuzzy_match",
-    "llm_judge",
+    "create_scorer",
+    "register_scorer",
 ]
-
-
-class BaseScorer:
-    """Base class for all scorers."""
-
-    def __init__(self, config: Dict[str, Any] = None):
-        self.config = config or {}
-
-    def score(self, item):  # pragma: no cover - to be overridden
-        raise NotImplementedError
-
-
-class _FunctionScorer(BaseScorer):
-    """Wrap a simple function-based scorer in a class."""
-
-    def __init__(self, func: Callable, config: Dict[str, Any] = None):
-        super().__init__(config)
-        self.func = func
-
-    def score(self, item):
-        return self.func(item, self.config)
-
-
-def get_available_scorers() -> Dict[str, Callable]:
-    return {
-        name: import_module(f"core.scoring.{name}")
-        for name in ["exact_match", "fuzzy_match", "llm_judge"]
-    }
-
-
-def create_scorer(name: str, config: Dict[str, Any] | None = None) -> BaseScorer:
-    module = import_module(f"core.scoring.{name}")
-    if hasattr(module, "Scorer"):
-        return module.Scorer(config or {})
-    elif hasattr(module, "LLMJudgeScorer"):
-        return module.LLMJudgeScorer(config or {})
-    elif hasattr(module, "score"):
-        return _FunctionScorer(module.score, config or {})
-    else:
-        raise ValueError(f"Unsupported scorer module: {name}")
