@@ -3,9 +3,11 @@ Reporting utilities for converting evaluation results to various formats.
 """
 import json
 import pandas as pd
-from typing import Dict, Any, List
-from datetime import datetime
+import csv
 import io
+from typing import Dict, Any, List, Set
+from datetime import datetime
+import numpy as np
 
 from core.data_models import EvaluationResults, EvaluationItem
 
@@ -20,38 +22,62 @@ def results_to_csv(results: EvaluationResults) -> str:
     Returns:
         CSV string
     """
-    data = []
+    if not results.items:
+        return ""
+    
+    # Collect all metadata keys and scorer names
+    metadata_keys: Set[str] = set()
+    scorer_names: Set[str] = set()
+    
+    for item in results.items:
+        metadata_keys.update(item.metadata.keys())
+        for score in item.scores:
+            scorer_names.add(score.scorer_name)
+    
+    # Build fieldnames
+    fieldnames = ["id", "input", "output", "expected_output"]
+    
+    # Add metadata columns
+    for key in sorted(metadata_keys):
+        fieldnames.append(f"metadata_{key}")
+    
+    # Add scorer fields
+    for scorer in sorted(scorer_names):
+        fieldnames.extend([
+            f"{scorer}_score",
+            f"{scorer}_passed",
+            f"{scorer}_reasoning",
+            f"{scorer}_error"
+        ])
+    
+    # Write CSV
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
     
     for item in results.items:
         row = {
-            "id": item.id,
+            "id": item.id or "",
             "input": item.input,
-            "output": item.output,
+            "output": item.output or "",
             "expected_output": item.expected_output,
         }
         
-        # Add metadata columns
-        for key, value in item.metadata.items():
-            row[f"metadata_{key}"] = value
+        # Add metadata
+        for key in metadata_keys:
+            row[f"metadata_{key}"] = item.metadata.get(key, "")
         
-        # Add scores for each scorer
+        # Add scores
         for score in item.scores:
-            scorer_name = score.scorer_name
-            row[f"{scorer_name}_score"] = score.score
-            row[f"{scorer_name}_passed"] = score.passed
-            row[f"{scorer_name}_reasoning"] = score.reasoning
+            row[f"{score.scorer_name}_score"] = score.score
+            row[f"{score.scorer_name}_passed"] = score.passed
+            row[f"{score.scorer_name}_reasoning"] = score.reasoning or ""
             if score.error:
-                row[f"{scorer_name}_error"] = score.error
+                row[f"{score.scorer_name}_error"] = score.error
         
-        data.append(row)
+        writer.writerow(row)
     
-    # Convert to DataFrame
-    df = pd.DataFrame(data)
-    
-    # Convert to CSV string
-    csv_buffer = io.StringIO()
-    df.to_csv(csv_buffer, index=False)
-    return csv_buffer.getvalue()
+    return output.getvalue()
 
 
 def results_to_json(results: EvaluationResults) -> str:
@@ -64,7 +90,6 @@ def results_to_json(results: EvaluationResults) -> str:
     Returns:
         JSON string
     """
-    # Use Pydantic's serialization
     return results.model_dump_json(indent=2)
 
 
@@ -272,7 +297,7 @@ def export_detailed_analysis(
             f.write(f"**Input:**\n```\n{item.input}\n```\n\n")
             f.write(f"**Expected Output:**\n```\n{item.expected_output}\n```\n\n")
             f.write(f"**Actual Output:**\n```\n{item.output}\n```\n\n")
-
+            
             f.write("**Scores:**\n")
             for score in item.scores:
                 status = "✅ PASS" if score.passed else "❌ FAIL"
@@ -281,5 +306,5 @@ def export_detailed_analysis(
                     f.write(f"  - Reasoning: {score.reasoning}\n")
                 if score.error:
                     f.write(f"  - Error: {score.error}\n")
-
+            
             f.write("\n---\n\n")
