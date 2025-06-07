@@ -1,7 +1,8 @@
 """Pydantic models used throughout the app."""
 from __future__ import annotations
-from typing import List, Any
-from dataclasses import dataclass
+from typing import List, Any, Dict, Optional
+from dataclasses import dataclass, field
+from enum import Enum
 try:
     from pydantic import BaseModel
 except ModuleNotFoundError:  # pragma: no cover - fallback for limited env
@@ -45,4 +46,43 @@ class RunResult(BaseModel):
     records: List[EvalRecord]
     scores: List[Score]
     metadata: RunMetadata
+
+
+class EvaluationMode(str, Enum):
+    """Modes for running evaluations."""
+
+    EVALUATE_EXISTING = "evaluate_existing"
+    GENERATE_THEN_EVALUATE = "generate_then_evaluate"
+
+
+@dataclass
+class ScorerResult(BaseModel):
+    scorer_name: str
+    score: float
+    passed: bool
+    reasoning: Optional[str] = None
+    error: Optional[str] = None
+    details: Optional[Dict[str, Any]] = None
+
+
+@dataclass
+class EvaluationItem(BaseModel):
+    id: Any
+    input: str
+    expected_output: str
+    output: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    scores: List[ScorerResult] = field(default_factory=list)
+
+
+@dataclass
+class EvaluationResults(BaseModel):
+    items: List[EvaluationItem]
+    summary_stats: Dict[str, Any] = field(default_factory=dict)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    config: Dict[str, Any] = field(default_factory=dict)
+
+    def model_dump_json(self, indent: int | None = None) -> str:
+        import json
+        return json.dumps(self.dict(), indent=indent)
 

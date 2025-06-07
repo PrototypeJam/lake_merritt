@@ -3,11 +3,13 @@ import sys
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from core.data_models import EvalRecord
-from core.scoring import exact_match
+from core.data_models import EvaluationItem
+from core.scoring import ExactMatchScorer
 
 
 def test_exact_match_scores_correctly():
-    rec = EvalRecord(prompt="", expected="hello", output="hello")
-    score = exact_match.score(rec, {})
-    assert score.value == 1.0
+    item = EvaluationItem(id=1, input="", expected_output="hello", output="hello")
+    scorer = ExactMatchScorer()
+    result = scorer.score(item)
+    assert result.score == 1.0
+    assert result.passed
