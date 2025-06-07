@@ -1,7 +1,7 @@
 """
 Scoring module containing various evaluation scorers.
 """
-from typing import Dict, Any, Type
+from typing import Dict, Any, Type, Optional
 from abc import ABC, abstractmethod
 
 from core.data_models import EvaluationItem, ScorerResult
@@ -44,10 +44,30 @@ class BaseScorer(ABC):
         return f"{self.name} scorer"
 
 
-# Import specific scorers
+# Import specific scorers - do this after BaseScorer is defined
 from core.scoring.exact_match import ExactMatchScorer
 from core.scoring.fuzzy_match import FuzzyMatchScorer
 from core.scoring.llm_judge import LLMJudgeScorer
+
+# Try to import optional scorer variants
+try:
+    from core.scoring.exact_match import (
+        CaseInsensitiveExactMatchScorer,
+        NormalizedExactMatchScorer,
+    )
+except ImportError:
+    CaseInsensitiveExactMatchScorer = None
+    NormalizedExactMatchScorer = None
+
+try:
+    from core.scoring.fuzzy_match import LevenshteinScorer
+except ImportError:
+    LevenshteinScorer = None
+
+try:
+    from core.scoring.llm_judge import StructuredLLMJudgeScorer
+except ImportError:
+    StructuredLLMJudgeScorer = None
 
 
 # Registry of available scorers
@@ -56,6 +76,16 @@ SCORER_REGISTRY: Dict[str, Type[BaseScorer]] = {
     "fuzzy_match": FuzzyMatchScorer,
     "llm_judge": LLMJudgeScorer,
 }
+
+# Add optional scorers if available
+if CaseInsensitiveExactMatchScorer:
+    SCORER_REGISTRY["case_insensitive_exact_match"] = CaseInsensitiveExactMatchScorer
+if NormalizedExactMatchScorer:
+    SCORER_REGISTRY["normalized_exact_match"] = NormalizedExactMatchScorer
+if LevenshteinScorer:
+    SCORER_REGISTRY["levenshtein"] = LevenshteinScorer
+if StructuredLLMJudgeScorer:
+    SCORER_REGISTRY["structured_llm_judge"] = StructuredLLMJudgeScorer
 
 
 def get_available_scorers() -> Dict[str, Dict[str, Any]]:
