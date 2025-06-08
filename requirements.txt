@@ -1,5 +1,5 @@
 streamlit>=1.28.0
-pandas>=2.2
+pandas>=2.0.0
 pydantic>=2.0.0
 openai>=1.0.0
 anthropic>=0.18.0
@@ -8,7 +8,7 @@ python-dotenv>=1.0.0
 fuzzywuzzy>=0.18.0
 python-Levenshtein>=0.21.0
 aiofiles>=23.0.0
-pytest>=8.2
+pytest>=7.0.0
 pytest-asyncio>=0.21.0
 numpy>=1.24.0
 nest-asyncio>=1.5
