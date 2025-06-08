@@ -1,9 +1,13 @@
-## Testing
+# AGENTS.md
 
-# 1. Ensure dependencies are present
+## Lake Merritt AI Evaluation Workbench
 
-bash -lc "pip install -r requirements.txt"
+### Environment Setup
 
-# 2. Run the full suite
+This project requires Python 3.9+ and uses pyproject.toml for dependency management.
 
-pytest -q
+### Testing Guidelines
+
+1. **Unit tests only** - Do not run integration tests that require API keys
+   ```bash
+   pytest tests/unit -v
