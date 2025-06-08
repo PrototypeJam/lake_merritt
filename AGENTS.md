@@ -22,6 +22,12 @@ pytest tests/unit -v -m "not requires_api"
 pytest tests/unit/test_exact_match.py -v
 ```
 
+### IMPORTANT: Testing Protocol
+1. NEVER run tests that require API keys
+2. ALWAYS use: pytest -v -m "not requires_api"
+3. If a test needs internet for pip, that's OK
+4. NEVER commit .env files or expose API keys
+
 ### Code Style
 - Use Black for formatting
 - Type hints are required for all new functions
