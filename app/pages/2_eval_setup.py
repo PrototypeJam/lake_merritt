@@ -52,6 +52,10 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file is not None:
+    MAX_FILE_SIZE_MB = 100
+    if uploaded_file.size > MAX_FILE_SIZE_MB * 1024 * 1024:
+        st.error(f"❌ File is too large ({uploaded_file.size / 1024**2:.1f}MB). Maximum size is {MAX_FILE_SIZE_MB}MB.")
+        st.stop()
     try:
         # Load and validate data
         df = pd.read_csv(uploaded_file)
