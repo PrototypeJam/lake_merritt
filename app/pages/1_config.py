@@ -1,15 +1,18 @@
 """
 Page 1: System & Model Configuration
 """
+
 import streamlit as st
 from typing import Dict, Any
 import os
 from dotenv import load_dotenv
+from services.llm_clients import create_llm_client
+import asyncio
 
 # Load environment variables
 load_dotenv()
 
-st.title("\u2699\uFE0F System & Model Configuration")
+st.title("\u2699\ufe0f System & Model Configuration")
 st.markdown("Configure API keys and default model parameters for evaluations.")
 
 # API Keys Section
@@ -68,7 +71,7 @@ Respond in JSON format:
     "score": 0.0-1.0,
     "reasoning": "explanation",
     "errors": ["error1", "error2"] or []
-}"""
+}""",
     }
 
 judge_config = st.session_state.model_configs["default_judge_config"]
@@ -81,24 +84,28 @@ with col1:
         ["openai", "anthropic", "google"],
         index=["openai", "anthropic", "google"].index(judge_config["provider"]),
     )
-    
+
     # Model selection based on provider
     model_options = {
         "openai": ["gpt-4", "gpt-4-turbo-preview", "gpt-3.5-turbo"],
-        "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"],
+        "anthropic": [
+            "claude-3-opus-20240229",
+            "claude-3-sonnet-20240229",
+            "claude-3-haiku-20240307",
+        ],
         "google": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro"],
     }
-    
+
     current_models = model_options[judge_config["provider"]]
     if judge_config["model"] not in current_models:
         judge_config["model"] = current_models[0]
-    
+
     judge_config["model"] = st.selectbox(
         "Judge Model",
         current_models,
         index=current_models.index(judge_config["model"]),
     )
-    
+
     judge_config["temperature"] = st.slider(
         "Temperature",
         min_value=0.0,
@@ -107,7 +114,7 @@ with col1:
         step=0.1,
         help="Lower values make output more deterministic",
     )
-    
+
     judge_config["max_tokens"] = st.number_input(
         "Max Tokens",
         min_value=100,
@@ -127,32 +134,91 @@ with col2:
 # Save Configuration
 st.header("3. Save Configuration")
 
-if st.button("\U0001F4BE Save All Configurations", type="primary", use_container_width=True):
-    # Validate that at least one API key is provided
-    if not any(st.session_state.api_keys.values()):
-        st.error("Please provide at least one API key.")
-    else:
-        st.success("Configuration saved successfully!")
-        st.session_state.model_configs["default_judge_config"] = judge_config
-        
-        # Show summary
-        st.markdown("### Configuration Summary")
-        
-        # API Keys status
-        st.markdown("**API Keys Configured:**")
+if st.button(
+    "\U0001f4be Save & Validate All Configurations",
+    type="primary",
+    use_container_width=True,
+):
+
+    async def validate_key(provider: str, key: str) -> bool:
+        """Test a single API key with a lightweight model call.
+
+        Args:
+            provider: Name of the provider.
+            key: API key to validate.
+
+        Returns:
+            True if the key is valid, otherwise False.
+        """
+
+        st.session_state.validation_results[provider] = {"status": "pending"}
+        try:
+            test_models: Dict[str, str] = {
+                "openai": "gpt-3.5-turbo",
+                "anthropic": "claude-3-haiku-20240307",
+                "google": "gemini-1.5-flash",
+            }
+            test_prompt = "Generate a single, short, safe-for-work sentence about space exploration."
+            messages = [{"role": "user", "content": test_prompt}]
+
+            client = create_llm_client(provider, key)
+            response = await client.generate(
+                messages,
+                model=test_models.get(provider),
+                temperature=0.7,
+                max_tokens=100,
+            )
+
+            st.session_state.validation_results[provider] = {
+                "status": "success",
+                "response": response,
+            }
+            return True
+        except Exception as e:  # noqa: BLE001
+            st.session_state.validation_results[provider] = {
+                "status": "failure",
+                "error": str(e),
+            }
+            if provider in st.session_state.api_keys:
+                st.session_state.api_keys[provider] = ""
+            return False
+
+    if "validation_results" not in st.session_state:
+        st.session_state.validation_results = {}
+
+    async def run_all_validations() -> None:
+        """Run validation for each provided API key concurrently."""
+
+        tasks = []
         for provider, key in st.session_state.api_keys.items():
             if key:
-                st.markdown(f"- {provider.title()}: \u2705 Set")
-        
-        # Model config summary
-        st.markdown(f"""
-        **Default Judge Configuration:**
-        - Provider: {judge_config['provider']}
-        - Model: {judge_config['model']}
-        - Temperature: {judge_config['temperature']}
-        - Max Tokens: {judge_config['max_tokens']}
-        """)
+                tasks.append(validate_key(provider, key))
+        await asyncio.gather(*tasks)
+
+    asyncio.run(run_all_validations())
+
+    all_valid = True
+    for provider, result in st.session_state.validation_results.items():
+        if result.get("status") == "success":
+            st.success(f"✅ {provider.title()} API key is valid and working!")
+            with st.expander(f"Test response from {provider.title()}", expanded=False):
+                st.write(result["response"])
+        elif result.get("status") == "failure":
+            st.error(
+                f"❌ {provider.title()} API key validation failed: {result['error']}"
+            )
+            all_valid = False
+
+    if all_valid and any(st.session_state.api_keys.values()):
+        st.session_state.model_configs["default_judge_config"] = judge_config
+        st.success("All configurations saved successfully.")
+    elif not any(st.session_state.api_keys.values()):
+        st.error("Please provide at least one API key.")
+    else:
+        st.warning("Configuration not saved. Please fix invalid keys and try again.")
 
 # Navigation hint
 st.markdown("---")
-st.info("\u2705 Once configured, proceed to **Evaluation Setup** to upload data and select scorers.")
+st.info(
+    "\u2705 Once configured, proceed to **Evaluation Setup** to upload data and select scorers."
+)
