@@ -50,14 +50,18 @@ if StructuredLLMJudgeScorer:
 
 
 def get_available_scorers() -> Dict[str, Dict[str, Any]]:
-    """
-    Get information about all available scorers.
-    
+    """Return metadata about each registered scorer.
+
+    The function iterates over :data:`SCORER_REGISTRY`, instantiates each
+    scorer class, and collects human-friendly information. The returned
+    dictionary maps the scorer's registration name to its class object,
+    display name and description.
+
     Returns:
-        Dictionary mapping scorer names to their information
+        Dict[str, Dict[str, Any]]: Mapping of scorer names to metadata.
     """
     scorers_info = {}
-    
+
     for name, scorer_class in SCORER_REGISTRY.items():
         scorer = scorer_class()
         scorers_info[name] = {
@@ -65,27 +69,29 @@ def get_available_scorers() -> Dict[str, Dict[str, Any]]:
             "display_name": scorer.name,
             "description": scorer.description,
         }
-    
+
     return scorers_info
 
 
 def create_scorer(name: str, config: Dict[str, Any] = None) -> BaseScorer:
     """
     Create a scorer instance by name.
-    
+
     Args:
         name: Name of the scorer
         config: Configuration for the scorer
-    
+
     Returns:
         Scorer instance
-    
+
     Raises:
         ValueError: If scorer name is not found
     """
     if name not in SCORER_REGISTRY:
-        raise ValueError(f"Unknown scorer: {name}. Available: {list(SCORER_REGISTRY.keys())}")
-    
+        raise ValueError(
+            f"Unknown scorer: {name}. Available: {list(SCORER_REGISTRY.keys())}"
+        )
+
     scorer_class = SCORER_REGISTRY[name]
     return scorer_class(config)
 
@@ -93,14 +99,14 @@ def create_scorer(name: str, config: Dict[str, Any] = None) -> BaseScorer:
 def register_scorer(name: str, scorer_class: Type[BaseScorer]) -> None:
     """
     Register a new scorer class.
-    
+
     Args:
         name: Name to register the scorer under
         scorer_class: The scorer class
     """
     if not issubclass(scorer_class, BaseScorer):
         raise TypeError("Scorer class must inherit from BaseScorer")
-    
+
     SCORER_REGISTRY[name] = scorer_class
 
 
