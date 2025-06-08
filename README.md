@@ -1,4 +1,4 @@
-# AI Evaluation Workbench
+# [Lake Merritt](https://lakemerritt.streamlit.app/): AI Evaluation Workbench
 
 A general-purpose, modular, and extensible platform for evaluating AI models and applications, primarily Large Language Models (LLMs).
 
