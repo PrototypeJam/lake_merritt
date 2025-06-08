@@ -1,6 +1,7 @@
 """
 Page 2: Evaluation Setup - Data Upload and Scoring Configuration
 """
+
 import streamlit as st
 import pandas as pd
 from typing import List, Dict, Any
@@ -12,7 +13,7 @@ nest_asyncio.apply()
 
 from core.ingestion import load_evaluation_data, validate_csv_columns
 from core.generation import generate_outputs
-from core.evaluation import run_evaluation
+from core.evaluation import run_evaluation_batch
 from core.data_models import EvaluationItem, EvaluationMode
 from core.scoring import get_available_scorers
 from services.llm_clients import create_llm_client
@@ -30,8 +31,11 @@ st.header("1. Select Evaluation Mode")
 mode = st.radio(
     "Choose how you want to evaluate:",
     [EvaluationMode.EVALUATE_EXISTING, EvaluationMode.GENERATE_THEN_EVALUATE],
-    format_func=lambda x: "Mode A: Evaluate Existing Outputs" if x == EvaluationMode.EVALUATE_EXISTING 
-                          else "Mode B: Generate Outputs, Then Evaluate",
+    format_func=lambda x: (
+        "Mode A: Evaluate Existing Outputs"
+        if x == EvaluationMode.EVALUATE_EXISTING
+        else "Mode B: Generate Outputs, Then Evaluate"
+    ),
     horizontal=True,
 )
 
@@ -41,9 +45,13 @@ st.session_state.evaluation_mode = mode
 st.header("2. Upload Evaluation Data")
 
 if mode == EvaluationMode.EVALUATE_EXISTING:
-    st.info("Upload a CSV with columns: `input`, `output`, `expected_output` (and optionally `id`)")
+    st.info(
+        "Upload a CSV with columns: `input`, `output`, `expected_output` (and optionally `id`)"
+    )
 else:
-    st.info("Upload a CSV with columns: `input`, `expected_output` (and optionally `id`)")
+    st.info(
+        "Upload a CSV with columns: `input`, `expected_output` (and optionally `id`)"
+    )
 
 uploaded_file = st.file_uploader(
     "Choose a CSV file",
@@ -54,33 +62,35 @@ uploaded_file = st.file_uploader(
 if uploaded_file is not None:
     MAX_FILE_SIZE_MB = 100
     if uploaded_file.size > MAX_FILE_SIZE_MB * 1024 * 1024:
-        st.error(f"❌ File is too large ({uploaded_file.size / 1024**2:.1f}MB). Maximum size is {MAX_FILE_SIZE_MB}MB.")
+        st.error(
+            f"❌ File is too large ({uploaded_file.size / 1024**2:.1f}MB). Maximum size is {MAX_FILE_SIZE_MB}MB."
+        )
         st.stop()
     try:
         # Load and validate data
         df = pd.read_csv(uploaded_file)
-        
+
         # Validate columns based on mode
         required_cols = ["input", "expected_output"]
         if mode == EvaluationMode.EVALUATE_EXISTING:
             required_cols.append("output")
-        
+
         is_valid, message = validate_csv_columns(df, required_cols)
-        
+
         if not is_valid:
             st.error(f"❌ {message}")
             st.stop()
-        
+
         # Show data preview
         st.success(f"✅ Loaded {len(df)} rows successfully!")
-        
+
         with st.expander("📊 Data Preview (first 5 rows)"):
             st.dataframe(df.head(), use_container_width=True)
-        
+
         # Convert to evaluation items
         eval_items = load_evaluation_data(df, mode)
         st.session_state.eval_data = eval_items
-        
+
     except Exception as e:
         st.error(f"Error loading file: {str(e)}")
         st.stop()
@@ -89,29 +99,33 @@ if uploaded_file is not None:
 if mode == EvaluationMode.GENERATE_THEN_EVALUATE and st.session_state.eval_data:
     st.header("3. Configure Actor Model")
     st.markdown("Select the model that will generate outputs for your inputs.")
-    
+
     col1, col2 = st.columns([1, 2])
-    
+
     with col1:
         actor_provider = st.selectbox(
             "Actor Model Provider",
             ["openai", "anthropic", "google"],
             key="actor_provider",
         )
-        
+
         # Model selection based on provider
         model_options = {
             "openai": ["gpt-4", "gpt-4-turbo-preview", "gpt-3.5-turbo"],
-            "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"],
+            "anthropic": [
+                "claude-3-opus-20240229",
+                "claude-3-sonnet-20240229",
+                "claude-3-haiku-20240307",
+            ],
             "google": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro"],
         }
-        
+
         actor_model = st.selectbox(
             "Actor Model",
             model_options[actor_provider],
             key="actor_model",
         )
-        
+
         actor_temperature = st.slider(
             "Temperature",
             min_value=0.0,
@@ -120,7 +134,7 @@ if mode == EvaluationMode.GENERATE_THEN_EVALUATE and st.session_state.eval_data:
             step=0.1,
             key="actor_temp",
         )
-        
+
         actor_max_tokens = st.number_input(
             "Max Tokens",
             min_value=100,
@@ -129,7 +143,7 @@ if mode == EvaluationMode.GENERATE_THEN_EVALUATE and st.session_state.eval_data:
             step=100,
             key="actor_tokens",
         )
-    
+
     with col2:
         actor_system_prompt = st.text_area(
             "Actor System Prompt (optional)",
@@ -137,13 +151,13 @@ if mode == EvaluationMode.GENERATE_THEN_EVALUATE and st.session_state.eval_data:
             height=200,
             key="actor_prompt",
         )
-    
+
     # Generate outputs button
     if st.button("🚀 Generate Outputs", type="primary", key="generate_btn"):
         with st.spinner("Generating outputs... This may take a few minutes."):
             progress_bar = st.progress(0)
             status_text = st.empty()
-            
+
             # Create actor configuration
             actor_config = {
                 "provider": actor_provider,
@@ -153,7 +167,7 @@ if mode == EvaluationMode.GENERATE_THEN_EVALUATE and st.session_state.eval_data:
                 "system_prompt": actor_system_prompt or None,
                 "api_key": st.session_state.api_keys.get(actor_provider),
             }
-            
+
             try:
                 # Run generation
                 updated_items = asyncio.run(
@@ -162,27 +176,32 @@ if mode == EvaluationMode.GENERATE_THEN_EVALUATE and st.session_state.eval_data:
                         actor_config,
                         progress_callback=lambda i, total: (
                             progress_bar.progress(i / total),
-                            status_text.text(f"Processing {i}/{total} items...")
+                            status_text.text(f"Processing {i}/{total} items..."),
                         ),
                     )
                 )
-                
+
                 st.session_state.eval_data = updated_items
-                st.success(f"✅ Successfully generated outputs for {len(updated_items)} items!")
-                
+                st.success(
+                    f"✅ Successfully generated outputs for {len(updated_items)} items!"
+                )
+
             except Exception as e:
                 st.error(f"Error generating outputs: {str(e)}")
                 st.stop()
 
 # Scorer Selection Section
 if st.session_state.eval_data and (
-    mode == EvaluationMode.EVALUATE_EXISTING or 
-    (mode == EvaluationMode.GENERATE_THEN_EVALUATE and all(item.output for item in st.session_state.eval_data))
+    mode == EvaluationMode.EVALUATE_EXISTING
+    or (
+        mode == EvaluationMode.GENERATE_THEN_EVALUATE
+        and all(item.output for item in st.session_state.eval_data)
+    )
 ):
     st.header("4. Select Scoring Methods")
-    
+
     available_scorers = get_available_scorers()
-    
+
     selected_scorers = st.multiselect(
         "Choose one or more scoring methods:",
         options=list(available_scorers.keys()),
@@ -190,18 +209,18 @@ if st.session_state.eval_data and (
         format_func=lambda x: available_scorers[x]["display_name"],
         help="Each scorer will evaluate all items in your dataset",
     )
-    
+
     st.session_state.selected_scorers = selected_scorers
-    
+
     # Scorer-specific configuration
     scorer_configs = {}
-    
+
     for scorer_name in selected_scorers:
         scorer_info = available_scorers[scorer_name]
-        
+
         with st.expander(f"⚙️ Configure {scorer_info['display_name']}"):
             st.markdown(scorer_info["description"])
-            
+
             if scorer_name == "fuzzy_match":
                 threshold = st.slider(
                     "Similarity Threshold",
@@ -213,7 +232,7 @@ if st.session_state.eval_data and (
                     key=f"{scorer_name}_threshold",
                 )
                 scorer_configs[scorer_name] = {"threshold": threshold}
-                
+
             elif scorer_name == "llm_judge":
                 # Use default judge config or allow override
                 use_default = st.checkbox(
@@ -221,9 +240,11 @@ if st.session_state.eval_data and (
                     value=True,
                     key=f"{scorer_name}_use_default",
                 )
-                
+
                 if use_default:
-                    scorer_configs[scorer_name] = st.session_state.model_configs["default_judge_config"].copy()
+                    scorer_configs[scorer_name] = st.session_state.model_configs[
+                        "default_judge_config"
+                    ].copy()
                     st.json(scorer_configs[scorer_name])
                 else:
                     # Allow custom configuration
@@ -232,32 +253,40 @@ if st.session_state.eval_data and (
                         ["openai", "anthropic", "google"],
                         key=f"{scorer_name}_provider",
                     )
-                    
+
                     model_options = {
                         "openai": ["gpt-4", "gpt-4-turbo-preview", "gpt-3.5-turbo"],
-                        "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229"],
+                        "anthropic": [
+                            "claude-3-opus-20240229",
+                            "claude-3-sonnet-20240229",
+                        ],
                         "google": ["gemini-1.5-pro", "gemini-1.5-flash"],
                     }
-                    
+
                     judge_model = st.selectbox(
                         "Judge Model",
                         model_options[judge_provider],
                         key=f"{scorer_name}_model",
                     )
-                    
+
                     judge_temp = st.slider(
                         "Temperature",
-                        0.0, 1.0, 0.3, 0.1,
+                        0.0,
+                        1.0,
+                        0.3,
+                        0.1,
                         key=f"{scorer_name}_temp",
                     )
-                    
+
                     judge_prompt = st.text_area(
                         "Judge Prompt",
-                        value=st.session_state.model_configs["default_judge_config"]["system_prompt"],
+                        value=st.session_state.model_configs["default_judge_config"][
+                            "system_prompt"
+                        ],
                         height=150,
                         key=f"{scorer_name}_prompt",
                     )
-                    
+
                     scorer_configs[scorer_name] = {
                         "provider": judge_provider,
                         "model": judge_model,
@@ -268,12 +297,12 @@ if st.session_state.eval_data and (
             else:
                 # No configuration needed
                 scorer_configs[scorer_name] = {}
-    
+
     # Run Evaluation Button
     st.header("5. Run Evaluation")
-    
+
     col1, col2, col3 = st.columns([2, 1, 1])
-    
+
     with col1:
         if st.button(
             "🔬 Start Evaluation",
@@ -284,32 +313,41 @@ if st.session_state.eval_data and (
             with st.spinner("Running evaluation..."):
                 progress_bar = st.progress(0)
                 status_text = st.empty()
-                
+
                 try:
-                    # Run evaluation
-                    results = asyncio.run(
-                        run_evaluation(
+                    # Run evaluation using Streamlit-friendly event loop
+                    try:
+                        loop = asyncio.get_event_loop()
+                    except RuntimeError:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+
+                    results = loop.run_until_complete(
+                        run_evaluation_batch(
                             st.session_state.eval_data,
                             selected_scorers,
                             scorer_configs,
                             st.session_state.api_keys,
+                            batch_size=10,
                             progress_callback=lambda i, total: (
                                 progress_bar.progress(i / total),
-                                status_text.text(f"Evaluating {i}/{total} items...")
+                                status_text.text(f"Evaluating {i}/{total} items..."),
                             ),
                         )
                     )
-                    
+
                     st.session_state.eval_results = results
                     st.success("✅ Evaluation completed successfully!")
-                    
+
                     # Show quick summary
                     st.markdown("### Quick Summary")
                     summary_cols = st.columns(len(selected_scorers))
-                    
+
                     for idx, scorer_name in enumerate(selected_scorers):
                         with summary_cols[idx]:
-                            scorer_display = available_scorers[scorer_name]["display_name"]
+                            scorer_display = available_scorers[scorer_name][
+                                "display_name"
+                            ]
                             if scorer_name in results.summary_stats:
                                 stats = results.summary_stats[scorer_name]
                                 st.metric(
@@ -317,22 +355,26 @@ if st.session_state.eval_data and (
                                     f"{stats.get('accuracy', 0):.1%}",
                                     f"{stats.get('passed', 0)}/{stats.get('total', 0)} passed",
                                 )
-                    
-                    st.info("🎯 Navigate to the **Results** page to see detailed evaluation outcomes.")
-                    
+
+                    st.info(
+                        "🎯 Navigate to the **Results** page to see detailed evaluation outcomes."
+                    )
+
                 except Exception as e:
                     st.error(f"Error during evaluation: {str(e)}")
-    
+
     with col2:
         st.metric("Total Items", len(st.session_state.eval_data))
-    
+
     with col3:
         st.metric("Selected Scorers", len(selected_scorers))
 
 # Navigation hints
 if not st.session_state.eval_data:
     st.info("👆 Upload a CSV file to begin evaluation setup.")
-elif mode == EvaluationMode.GENERATE_THEN_EVALUATE and not all(item.output for item in st.session_state.eval_data):
+elif mode == EvaluationMode.GENERATE_THEN_EVALUATE and not all(
+    item.output for item in st.session_state.eval_data
+):
     st.info("👆 Generate outputs before selecting scorers.")
 elif not st.session_state.selected_scorers:
     st.info("👆 Select at least one scoring method to run evaluation.")
