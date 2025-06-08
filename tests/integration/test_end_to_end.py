@@ -240,6 +240,81 @@ class TestEndToEndEvaluation:
             assert "display_name" in scorer_info
             assert "description" in scorer_info
 
+    # ADD THESE MARKED TESTS FOR MODE B (GENERATION) AND LLM JUDGE
+    @pytest.mark.requires_api
+    @pytest.mark.asyncio
+    async def test_generate_outputs(self):
+        """Test generating outputs using an Actor LLM."""
+        items = [
+            EvaluationItem(
+                id="1",
+                input="What is 2+2?",
+                expected_output="4"
+            ),
+            EvaluationItem(
+                id="2",
+                input="What is the capital of France?",
+                expected_output="Paris"
+            ),
+        ]
+        
+        actor_config = {
+            "provider": "openai",
+            "model": "gpt-3.5-turbo",
+            "temperature": 0.3,
+            "max_tokens": 100,
+            "api_key": os.getenv("OPENAI_API_KEY"),  # This would need a real key
+        }
+        
+        # This test would actually call the OpenAI API
+        updated_items = await generate_outputs(items, actor_config)
+        
+        assert len(updated_items) == 2
+        assert all(item.output is not None for item in updated_items)
+        assert all(len(item.output) > 0 for item in updated_items)
+
+    @pytest.mark.requires_api
+    @pytest.mark.asyncio
+    async def test_llm_judge_scorer(self):
+        """Test LLM Judge scorer with real API calls."""
+        from core.scoring.llm_judge import LLMJudgeScorer
+        
+        item = EvaluationItem(
+            id="1",
+            input="What is the capital of France?",
+            output="Paris is the capital of France.",
+            expected_output="Paris"
+        )
+        
+        config = {
+            "provider": "openai",
+            "model": "gpt-3.5-turbo",
+            "temperature": 0.3,
+            "api_key": os.getenv("OPENAI_API_KEY"),  # This would need a real key
+        }
+        
+        scorer = LLMJudgeScorer(config)
+        result = await scorer.score(item)
+        
+        assert result.score >= 0.0 and result.score <= 1.0
+        assert isinstance(result.passed, bool)
+        assert result.reasoning is not None
+        assert len(result.reasoning) > 0
+
+    @pytest.mark.requires_api
+    def test_create_llm_client(self):
+        """Test creating LLM clients with real API keys."""
+        # This test would validate real API keys
+        from services.llm_clients import create_llm_client
+        
+        # Test OpenAI client
+        client = create_llm_client("openai", os.getenv("OPENAI_API_KEY"))
+        assert client.validate_api_key()
+        
+        # Test Anthropic client
+        client = create_llm_client("anthropic", os.getenv("ANTHROPIC_API_KEY"))
+        assert client.validate_api_key()
+
 
 class TestErrorHandling:
     """Test error handling in the evaluation pipeline."""
