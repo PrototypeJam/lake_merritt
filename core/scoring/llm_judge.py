@@ -1,6 +1,7 @@
 """
 LLM-as-a-Judge scorer - uses an LLM to evaluate outputs.
 """
+
 import json
 import asyncio
 import logging
@@ -22,7 +23,9 @@ class LLMJudgeScorer(BaseScorer):
         self.model = self.config.get("model", "gpt-4")
         self.temperature = self.config.get("temperature", 0.3)
         self.max_tokens = self.config.get("max_tokens", 1000)
-        self.system_prompt = self.config.get("system_prompt", self._default_system_prompt())
+        self.system_prompt = self.config.get(
+            "system_prompt", self._default_system_prompt()
+        )
         self.api_key = self.config.get("api_key")
         self.threshold = self.config.get("threshold", 0.7)
 
@@ -43,6 +46,7 @@ class LLMJudgeScorer(BaseScorer):
 1. A score from 0.0 to 1.0 (where 1.0 is perfect match/quality)
 2. A brief reasoning for your score
 3. Any specific errors or discrepancies noted
+4. A boolean `passed` field indicating whether the answer meets the requirements
 
 Consider the following criteria:
 - Factual accuracy
@@ -54,7 +58,8 @@ Respond in JSON format:
 {
     "score": 0.0-1.0,
     "reasoning": "explanation",
-    "errors": ["error1", "error2"] or []
+    "errors": ["error1", "error2"] or [],
+    "passed": true
 }"""
 
     async def score(self, item: EvaluationItem) -> ScorerResult:
@@ -98,8 +103,8 @@ Provide your evaluation in the specified JSON format."""
             # Parse the response
             try:
                 # Try to extract JSON from the response
-                json_start = response.find('{')
-                json_end = response.rfind('}') + 1
+                json_start = response.find("{")
+                json_end = response.rfind("}") + 1
                 if json_start >= 0 and json_end > json_start:
                     json_str = response[json_start:json_end]
                     result = json.loads(json_str)
@@ -115,7 +120,7 @@ Provide your evaluation in the specified JSON format."""
                 result = {
                     "score": score,
                     "reasoning": response,
-                    "errors": ["Failed to parse structured response"]
+                    "errors": ["Failed to parse structured response"],
                 }
 
             # Extract values with defaults
@@ -124,7 +129,10 @@ Provide your evaluation in the specified JSON format."""
             reasoning = result.get("reasoning", "No reasoning provided")
             errors = result.get("errors", [])
 
-            passed = score >= self.threshold
+            if "passed" in result and isinstance(result.get("passed"), bool):
+                passed = result["passed"]
+            else:
+                passed = score >= self.threshold
 
             return ScorerResult(
                 scorer_name="llm_judge",
@@ -135,8 +143,12 @@ Provide your evaluation in the specified JSON format."""
                     "model": self.model,
                     "threshold": self.threshold,
                     "errors": errors,
-                    "raw_response": response if self.config.get("include_raw_response", False) else None,
-                }
+                    "raw_response": (
+                        response
+                        if self.config.get("include_raw_response", False)
+                        else None
+                    ),
+                },
             )
 
         except Exception as e:
@@ -154,18 +166,18 @@ Provide your evaluation in the specified JSON format."""
         import re
 
         patterns = [
-            r'score[:\s]+([0-9]*\.?[0-9]+)',
-            r'([0-9]*\.?[0-9]+)/10',
-            r'([0-9]+)%',
+            r"score[:\s]+([0-9]*\.?[0-9]+)",
+            r"([0-9]*\.?[0-9]+)/10",
+            r"([0-9]+)%",
         ]
 
         for pattern in patterns:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
                 value = float(match.group(1))
-                if '%' in pattern:
+                if "%" in pattern:
                     return value / 100.0
-                elif '/10' in pattern:
+                elif "/10" in pattern:
                     return value / 10.0
                 elif value <= 1.0:
                     return value
@@ -208,24 +220,24 @@ class StructuredLLMJudgeScorer(LLMJudgeScorer):
                     "type": "number",
                     "minimum": 0,
                     "maximum": 1,
-                    "description": "Score from 0.0 to 1.0"
+                    "description": "Score from 0.0 to 1.0",
                 },
                 "reasoning": {
                     "type": "string",
-                    "description": "Explanation for the score"
+                    "description": "Explanation for the score",
                 },
                 "errors": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "List of specific errors found"
+                    "description": "List of specific errors found",
                 },
                 "suggestions": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Suggestions for improvement"
-                }
+                    "description": "Suggestions for improvement",
+                },
             },
-            "required": ["score", "reasoning"]
+            "required": ["score", "reasoning"],
         }
 
         user_prompt = f"""Evaluate the actual output against the expected output.
@@ -235,11 +247,13 @@ Expected Output: {item.expected_output}
 Actual Output: {item.output}"""
 
         try:
-            if self.provider == "openai" and hasattr(self.client, 'generate_structured'):
+            if self.provider == "openai" and hasattr(
+                self.client, "generate_structured"
+            ):
                 result = await self.client.generate_structured(
                     messages=[
                         {"role": "system", "content": self.system_prompt},
-                        {"role": "user", "content": user_prompt}
+                        {"role": "user", "content": user_prompt},
                     ],
                     model=self.model,
                     schema=evaluation_schema,
@@ -261,7 +275,7 @@ Actual Output: {item.output}"""
                     "threshold": self.threshold,
                     "errors": result.get("errors", []),
                     "suggestions": result.get("suggestions", []),
-                }
+                },
             )
 
         except Exception as e:
