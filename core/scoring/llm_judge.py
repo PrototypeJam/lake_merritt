@@ -43,10 +43,10 @@ class LLMJudgeScorer(BaseScorer):
     def _default_system_prompt(self) -> str:
         """Get the default system prompt for the judge."""
         return """You are an expert evaluator. Compare the actual output to the expected output and provide:
-1. A score from 0.0 to 1.0 (where 1.0 is perfect match/quality)
-2. A brief reasoning for your score
-3. Any specific errors or discrepancies noted
-4. A boolean `passed` field indicating whether the answer meets the requirements
+1. A boolean 'passed' field (true if the output meets acceptable standards, false otherwise)
+2. A score from 0.0 to 1.0 (where 1.0 is perfect match/quality)
+3. A brief reasoning for your score and pass/fail decision
+4. Any specific errors or discrepancies noted
 
 Consider the following criteria:
 - Factual accuracy
@@ -56,10 +56,10 @@ Consider the following criteria:
 
 Respond in JSON format:
 {
+    "passed": true/false,
     "score": 0.0-1.0,
     "reasoning": "explanation",
-    "errors": ["error1", "error2"] or [],
-    "passed": true
+    "errors": ["error1", "error2"] or []
 }"""
 
     async def score(self, item: EvaluationItem) -> ScorerResult:
