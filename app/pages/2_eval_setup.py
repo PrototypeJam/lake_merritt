@@ -9,8 +9,6 @@ import asyncio
 import nest_asyncio
 from io import StringIO
 
-nest_asyncio.apply()
-
 from core.ingestion import load_evaluation_data, validate_csv_columns
 from core.generation import generate_outputs
 from core.evaluation import run_evaluation_batch
@@ -315,7 +313,11 @@ if st.session_state.eval_data and (
                 status_text = st.empty()
 
                 try:
-                    # Run evaluation using Streamlit-friendly event loop
+                    # DEVELOPER NOTE: This specific pattern for getting the event loop is
+                    # the recommended best practice for using asyncio within Streamlit.
+                    # It safely gets the existing event loop or creates a new one for the
+                    # current thread if one doesn't exist, avoiding the common
+                    # `RuntimeError` that `asyncio.run()` can cause. [2, 3]
                     try:
                         loop = asyncio.get_event_loop()
                     except RuntimeError:
@@ -339,28 +341,11 @@ if st.session_state.eval_data and (
                     st.session_state.eval_results = results
                     st.success("✅ Evaluation completed successfully!")
 
-                    # Show quick summary
-                    st.markdown("### Quick Summary")
-                    summary_cols = st.columns(len(selected_scorers))
-
-                    for idx, scorer_name in enumerate(selected_scorers):
-                        with summary_cols[idx]:
-                            scorer_display = available_scorers[scorer_name][
-                                "display_name"
-                            ]
-                            if scorer_name in results.summary_stats:
-                                stats = results.summary_stats[scorer_name]
-                                st.metric(
-                                    scorer_display,
-                                    f"{stats.get('accuracy', 0):.1%}",
-                                    f"{stats.get('passed', 0)}/{stats.get('total', 0)} passed",
-                                )
-
-                    st.info(
-                        "🎯 Navigate to the **Results** page to see detailed evaluation outcomes."
-                    )
-
                 except Exception as e:
+                    import logging
+
+                    logger = logging.getLogger(__name__)
+                    logger.exception("Evaluation failed")
                     st.error(f"Error during evaluation: {str(e)}")
 
     with col2:
