@@ -129,10 +129,15 @@ Provide your evaluation in the specified JSON format."""
             reasoning = result.get("reasoning", "No reasoning provided")
             errors = result.get("errors", [])
 
+            # Prioritize explicit 'passed' field if provided
             if "passed" in result and isinstance(result.get("passed"), bool):
                 passed = result["passed"]
             else:
                 passed = score >= self.threshold
+                logger.warning(
+                    f"LLM response for item '{item.id}' missing 'passed' field or not a boolean. "
+                    f"Falling back to threshold check (score {score:.2f} >= {self.threshold})."
+                )
 
             return ScorerResult(
                 scorer_name="llm_judge",
