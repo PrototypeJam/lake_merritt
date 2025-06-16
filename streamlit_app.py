@@ -5,8 +5,9 @@
 # uv venv venv (maken good new virtual environment)
 #___ Do Above for Working Snapshot Branch THEN Continue With Below___
 # source venv/bin/activate
-# uv pip install -r requirements.txt
-# pip install --upgrade pip
+# uv pip install -e ".[test,dev]"
+# uv pip install -r requirements.txt (OLD - test above before deleting this)
+# pip install --upgrade pip (maybe not needed?)
 # streamlit run streamlit_app.py
 
 
