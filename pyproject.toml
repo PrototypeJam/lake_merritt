@@ -10,7 +10,16 @@ version = "0.1.0"
 description = "Lake Merritt is a modular platform for evaluating AI models and applications"
 readme = "README.md"
 requires-python = ">=3.9, !=3.9.7"
-license = {text = "MIT"}
+
+# --- CHANGE #1: FIX LICENSE DEPRECATION WARNING ---
+# The old way `license = {text = "MIT"}` is deprecated.
+# This new way correctly points to your LICENSE file.
+license = { file = "LICENSE" }
+
+# --- CHANGE #2: EXPLICITLY DECLARE PACKAGES (THE MAIN FIX) ---
+# This new section tells setuptools exactly which directories
+# are part of your installable Python package.
+packages = ["app", "core", "services", "utils"]
 
 dependencies = [
     "streamlit>=1.28.0",
