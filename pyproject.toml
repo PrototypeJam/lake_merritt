@@ -1,3 +1,5 @@
+# In file: pyproject.toml
+
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
@@ -7,7 +9,7 @@ name = "ai-eval-workbench"
 version = "0.1.0"
 description = "Lake Merritt is a modular platform for evaluating AI models and applications"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.9, !=3.9.7"
 license = {text = "MIT"}
 
 dependencies = [
