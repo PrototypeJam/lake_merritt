@@ -43,7 +43,11 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 3. Install dependencies:
 ```bash
-pip install -r requirements.txt
+# For development (includes testing and linting tools):
+pip install -e ".[test,dev]"
+
+# For standard installation:
+pip install .
 ```
 
 4. Copy `.env.template` to `.env` and add your API keys:
