@@ -1,8 +1,7 @@
-# python -m venv venv
 # uv venv venv
 # source venv/bin/activate
-# uv pip install -r requirements.txt
-# pip install --upgrade pip
+# uv pip install --upgrade pip
+# uv pip install -e ".[test,dev]"
 # streamlit run streamlit_app.py
 
 
