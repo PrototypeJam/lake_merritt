@@ -1,3 +1,4 @@
+# rm -rf venv (first time after switch to .toml not requirements.txt)
 # uv venv venv
 # source venv/bin/activate
 # uv pip install --upgrade pip
