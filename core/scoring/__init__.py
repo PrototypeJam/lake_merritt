@@ -21,11 +21,6 @@ except ImportError:
     NormalizedExactMatchScorer = None
 
 try:
-    from core.scoring.fuzzy_match import LevenshteinScorer
-except ImportError:
-    LevenshteinScorer = None
-
-try:
     from core.scoring.llm_judge import StructuredLLMJudgeScorer
 except ImportError:
     StructuredLLMJudgeScorer = None
@@ -43,8 +38,6 @@ if CaseInsensitiveExactMatchScorer:
     SCORER_REGISTRY["case_insensitive_exact_match"] = CaseInsensitiveExactMatchScorer
 if NormalizedExactMatchScorer:
     SCORER_REGISTRY["normalized_exact_match"] = NormalizedExactMatchScorer
-if LevenshteinScorer:
-    SCORER_REGISTRY["levenshtein"] = LevenshteinScorer
 if StructuredLLMJudgeScorer:
     SCORER_REGISTRY["structured_llm_judge"] = StructuredLLMJudgeScorer
 
