@@ -1,3 +1,7 @@
+# git fetch origin
+# git checkout restore-lake-merritt
+# git pull origin restore-lake-merritt
+#___ Do Above for Working Snapshot Branch___
 # python -m venv venv
 # uv venv venv
 # source venv/bin/activate
