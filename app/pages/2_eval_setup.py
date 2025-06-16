@@ -64,9 +64,17 @@ if uploaded_file is not None:
             f"❌ File is too large ({uploaded_file.size / 1024**2:.1f}MB). Maximum size is {MAX_FILE_SIZE_MB}MB."
         )
         st.stop()
+
     try:
         # Load and validate data
         df = pd.read_csv(uploaded_file)
+
+        # Check for empty dataframe
+        if df.empty:
+            st.error(
+                "❌ The uploaded CSV file is empty. Please provide a file with data."
+            )
+            st.stop()
 
         # Validate columns based on mode
         required_cols = ["input", "expected_output"]
@@ -76,7 +84,13 @@ if uploaded_file is not None:
         is_valid, message = validate_csv_columns(df, required_cols)
 
         if not is_valid:
-            st.error(f"❌ {message}")
+            st.error(f"❌ CSV Validation Failed: {message}")
+            st.info(
+                f"📋 Required columns for this mode: {', '.join([f'`{col}`' for col in required_cols])}"
+            )
+            st.info(
+                f"📄 Your file has: {', '.join([f'`{col}`' for col in df.columns.tolist()])}"
+            )
             st.stop()
 
         # Show data preview
@@ -89,8 +103,25 @@ if uploaded_file is not None:
         eval_items = load_evaluation_data(df, mode)
         st.session_state.eval_data = eval_items
 
+    except pd.errors.EmptyDataError:
+        st.error("❌ The uploaded file appears to be empty or corrupted.")
+        st.info("Please ensure your CSV file contains data and is properly formatted.")
+        st.stop()
+    except pd.errors.ParserError as e:
+        st.error(f"❌ Error parsing CSV file: {str(e)}")
+        st.info(
+            "💡 Common issues: Inconsistent number of columns per row or unescaped commas within fields."
+        )
+        st.stop()
+    except UnicodeDecodeError:
+        st.error(
+            "❌ File encoding error. Please ensure your CSV is saved in UTF-8 format."
+        )
+        st.info("💡 How to fix: In Excel, use 'Save As' and choose 'CSV UTF-8' format.")
+        st.stop()
     except Exception as e:
-        st.error(f"Error loading file: {str(e)}")
+        st.error(f"❌ Unexpected error loading file: {str(e)}")
+        logger.exception("Failed to load uploaded file")
         st.stop()
 
 # Mode B: Actor Model Configuration
