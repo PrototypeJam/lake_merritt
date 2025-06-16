@@ -3,7 +3,7 @@
 ## Lake Merritt AI Evaluation Workbench
 
 ### Environment Setup
-This project requires Python 3.9+ and uses requirements.txt for dependency management.
+This project requires Python 3.9+ and defines dependencies in `pyproject.toml`.
 We use `uv` for fast, reliable dependency installation.
 
 ### Testing Guidelines
@@ -34,7 +34,7 @@ pytest tests/unit/test_exact_match.py -v
 - Docstrings follow Google style
 
 ### Common Tasks
-- **Install dependencies**: `uv pip install -r requirements.txt`
+- **Install dependencies**: `uv pip install -e ".[test,dev]"`
 - **Run safe tests**: `pytest -v -m "not requires_api"`
 - **Run a specific scorer test**: `pytest tests/unit/test_exact_match.py -v`
 - **Check types**: `mypy core --ignore-missing-imports`
