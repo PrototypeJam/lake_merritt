@@ -8,8 +8,36 @@ import io
 from typing import Dict, Any, List, Set
 from datetime import datetime
 import numpy as np
+import copy
 
 from core.data_models import EvaluationResults, EvaluationItem
+
+
+def sanitize_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Remove sensitive information from configuration.
+    
+    Args:
+        config: Original configuration dictionary
+    
+    Returns:
+        Sanitized configuration with sensitive data masked
+    """
+    # Deep copy to avoid modifying original
+    sanitized = copy.deepcopy(config)
+    
+    # Remove API keys from scorer configs
+    if "scorer_configs" in sanitized:
+        for scorer_name, scorer_config in sanitized["scorer_configs"].items():
+            if isinstance(scorer_config, dict) and "api_key" in scorer_config:
+                scorer_config["api_key"] = "***REDACTED***"
+    
+    # Remove any top-level API keys
+    for key in list(sanitized.keys()):
+        if "api_key" in key.lower() or "secret" in key.lower():
+            sanitized[key] = "***REDACTED***"
+    
+    return sanitized
 
 
 def results_to_csv(results: EvaluationResults) -> str:
@@ -191,7 +219,9 @@ def generate_summary_report(results: EvaluationResults) -> str:
     report_lines.append("## Configuration")
     report_lines.append("")
     report_lines.append("```json")
-    report_lines.append(json.dumps(results.config, indent=2))
+    # Sanitize config to remove sensitive data
+    sanitized_config = sanitize_config(results.config)
+    report_lines.append(json.dumps(sanitized_config, indent=2))
     report_lines.append("```")
     report_lines.append("")
     

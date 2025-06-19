@@ -88,6 +88,12 @@ The project follows a modular architecture:
 - `services/`: External API integrations (LLM providers)
 - `utils/`: Helper utilities
 
+### Evaluating OpenTelemetry traces
+1. Go to **Evaluation Setup**.
+2. Upload `manual_traces.json` (or any JSON in the same schema).
+3. Select **Criteria Selection Judge** in the scorer picker.
+4. Run. Results will include an expandable timeline for each trace.
+
 ## Contributing
 
 This project emphasizes deep modularity. When adding new features:
