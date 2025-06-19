@@ -144,7 +144,8 @@ async def run_evaluation_batch(
     scorers = {}
     for scorer_name in selected_scorers:
         config = scorer_configs.get(scorer_name, {})
-        if scorer_name == "llm_judge" and "api_key" not in config:
+        # Add API key for LLM-based scorers
+        if scorer_name in ["llm_judge", "criteria_selection_judge"] and "api_key" not in config:
             provider = config.get("provider", "openai")
             config["api_key"] = api_keys.get(provider)
         
