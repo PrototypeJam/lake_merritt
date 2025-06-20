@@ -12,6 +12,7 @@ from core.reporting import (
     results_to_csv,
     results_to_json,
     generate_summary_report,
+    sanitize_config,
 )
 
 st.title("⬇️ Download Center")
@@ -82,8 +83,8 @@ with col1:
     st.markdown("Export the configuration used for this evaluation run.")
     
     config_export = {
-        "evaluation_config": results.config,
-        "model_configs": st.session_state.model_configs,
+        "evaluation_config": sanitize_config(results.config),
+        "model_configs": sanitize_config(st.session_state.model_configs),
         "selected_scorers": st.session_state.selected_scorers,
         "timestamp": timestamp,
     }
