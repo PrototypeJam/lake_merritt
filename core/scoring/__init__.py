@@ -1,22 +1,19 @@
 """Scoring module containing various evaluation scorers."""
 
-from typing import Dict, Any, Type
+from typing import Any, Dict, Type
 
 from core.scoring.base import BaseScorer
-
-
 # Import specific scorers - do this after BaseScorer is defined
 from core.scoring.exact_match import ExactMatchScorer
 from core.scoring.fuzzy_match import FuzzyMatchScorer
 from core.scoring.llm_judge import LLMJudgeScorer
-from core.scoring.otel.criteria_selection_judge import CriteriaSelectionJudgeScorer
+from core.scoring.otel.criteria_selection_judge import \
+    CriteriaSelectionJudgeScorer
 
 # Try to import optional scorer variants
 try:
-    from core.scoring.exact_match import (
-        CaseInsensitiveExactMatchScorer,
-        NormalizedExactMatchScorer,
-    )
+    from core.scoring.exact_match import (CaseInsensitiveExactMatchScorer,
+                                          NormalizedExactMatchScorer)
 except ImportError:
     CaseInsensitiveExactMatchScorer = None
     NormalizedExactMatchScorer = None

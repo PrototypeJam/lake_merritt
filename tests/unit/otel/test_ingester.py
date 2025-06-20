@@ -1,5 +1,8 @@
-import pathlib, json
+import json
+import pathlib
+
 from core.otel.ingester import OTelTraceIngester
+
 
 def test_ingester_produces_items():
     raw = pathlib.Path("fixtures/manual_traces.json").read_text()

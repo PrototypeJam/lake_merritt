@@ -1,19 +1,17 @@
 """
 Page 4: Download Center
 """
-import streamlit as st
-import pandas as pd
+
+import io
 import json
 from datetime import datetime
-import io
-from typing import Dict, Any
+from typing import Any, Dict
 
-from core.reporting import (
-    results_to_csv,
-    results_to_json,
-    generate_summary_report,
-    sanitize_config,
-)
+import pandas as pd
+import streamlit as st
+
+from core.reporting import (generate_summary_report, results_to_csv,
+                            results_to_json, sanitize_config)
 
 st.title("⬇️ Download Center")
 st.markdown("Export evaluation results and related artifacts.")
@@ -37,7 +35,7 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown("### 📄 CSV Format")
     st.markdown("Flat table format, ideal for Excel or data analysis tools.")
-    
+
     csv_data = results_to_csv(results)
     st.download_button(
         label="Download Results CSV",
@@ -50,7 +48,7 @@ with col1:
 with col2:
     st.markdown("### 📋 JSON Format")
     st.markdown("Structured format with full details and metadata.")
-    
+
     json_data = results_to_json(results)
     st.download_button(
         label="Download Results JSON",
@@ -63,7 +61,7 @@ with col2:
 with col3:
     st.markdown("### 📊 Summary Report")
     st.markdown("Human-readable summary with key insights.")
-    
+
     summary_report = generate_summary_report(results)
     st.download_button(
         label="Download Summary Report",
@@ -81,14 +79,14 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown("### 🔧 Configuration Export")
     st.markdown("Export the configuration used for this evaluation run.")
-    
+
     config_export = {
         "evaluation_config": sanitize_config(results.config),
         "model_configs": sanitize_config(st.session_state.model_configs),
         "selected_scorers": st.session_state.selected_scorers,
         "timestamp": timestamp,
     }
-    
+
     st.download_button(
         label="Download Configuration",
         data=json.dumps(config_export, indent=2),
@@ -100,22 +98,24 @@ with col1:
 with col2:
     st.markdown("### 📈 Detailed Scores")
     st.markdown("Export individual scores for each item and scorer.")
-    
+
     # Create detailed scores DataFrame
     scores_data = []
     for item in results.items:
         for score in item.scores:
-            scores_data.append({
-                "item_id": item.id or f"Item_{results.items.index(item) + 1}",
-                "scorer": score.scorer_name,
-                "score": score.score,
-                "passed": score.passed,
-                "reasoning": score.reasoning,
-            })
-    
+            scores_data.append(
+                {
+                    "item_id": item.id or f"Item_{results.items.index(item) + 1}",
+                    "scorer": score.scorer_name,
+                    "score": score.score,
+                    "passed": score.passed,
+                    "reasoning": score.reasoning,
+                }
+            )
+
     scores_df = pd.DataFrame(scores_data)
     scores_csv = scores_df.to_csv(index=False)
-    
+
     st.download_button(
         label="Download Detailed Scores",
         data=scores_csv,
@@ -150,27 +150,28 @@ preview_type = st.selectbox(
 with st.expander("Preview", expanded=True):
     if preview_type == "CSV Results":
         # Show first few rows of CSV
-        csv_preview = results_to_csv(results).split('\n')[:10]
-        st.text('\n'.join(csv_preview) + "\n...")
-    
+        csv_preview = results_to_csv(results).split("\n")[:10]
+        st.text("\n".join(csv_preview) + "\n...")
+
     elif preview_type == "JSON Results":
         # Show truncated JSON
         json_obj = json.loads(results_to_json(results))
         json_obj["items"] = json_obj["items"][:2]  # Show only first 2 items
         st.json(json_obj)
-    
+
     elif preview_type == "Summary Report":
         # Show first part of summary
-        summary_lines = generate_summary_report(results).split('\n')[:30]
-        st.markdown('\n'.join(summary_lines) + "\n\n*... (truncated)*")
-    
+        summary_lines = generate_summary_report(results).split("\n")[:30]
+        st.markdown("\n".join(summary_lines) + "\n\n*... (truncated)*")
+
     else:  # Configuration
         st.json(config_export)
 
 # Usage Tips
 st.header("5. Export Tips")
 
-st.info("""
+st.info(
+    """
 **💡 Tips for using exported data:**
 
 - **CSV Format**: Best for importing into Excel, Google Sheets, or data analysis tools like pandas
@@ -179,10 +180,9 @@ st.info("""
 - **Configuration Export**: Useful for reproducing evaluation runs or debugging issues
 
 **📊 For advanced analysis**, consider using the JSON export with a Jupyter notebook to create custom visualizations and deeper insights.
-""")
+"""
+)
 
 # Footer
 st.markdown("---")
-st.markdown(
-    f"*Results generated on {datetime.now().strftime('%Y-%m-%d at %H:%M:%S')}*"
-)
+st.markdown(f"*Results generated on {datetime.now().strftime('%Y-%m-%d at %H:%M:%S')}*")

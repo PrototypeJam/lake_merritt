@@ -2,18 +2,19 @@
 Page 2: Evaluation Setup - Data Upload and Scoring Configuration
 """
 
-import streamlit as st
-import pandas as pd
-from typing import List, Dict, Any
 import asyncio
-import nest_asyncio
-from io import StringIO
 import logging
+from io import StringIO
+from typing import Any, Dict, List
 
-from core.ingestion import load_evaluation_data, validate_csv_columns
-from core.generation import generate_outputs
-from core.evaluation import run_evaluation_batch
+import nest_asyncio
+import pandas as pd
+import streamlit as st
+
 from core.data_models import EvaluationItem, EvaluationMode
+from core.evaluation import run_evaluation_batch
+from core.generation import generate_outputs
+from core.ingestion import load_evaluation_data, validate_csv_columns
 from core.scoring import get_available_scorers
 from services.llm_clients import create_llm_client
 
@@ -72,6 +73,7 @@ if uploaded_file is not None:
         # Check file type and load accordingly
         if uploaded_file.type == "application/json":
             from core.otel.ingester import OTelTraceIngester
+
             raw_str = uploaded_file.getvalue().decode("utf-8")
             traces = OTelTraceIngester().ingest_str(raw_str)
             st.session_state.eval_data = traces

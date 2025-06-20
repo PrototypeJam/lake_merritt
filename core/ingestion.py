@@ -1,11 +1,13 @@
 """
 Data ingestion and validation utilities.
 """
-import pandas as pd
-import logging
-from typing import List, Tuple, Union
-from pathlib import Path
+
 import json
+import logging
+from pathlib import Path
+from typing import List, Tuple, Union
+
+import pandas as pd
 
 from core.data_models import EvaluationItem, EvaluationMode
 
@@ -18,24 +20,24 @@ def validate_csv_columns(
 ) -> Tuple[bool, str]:
     """
     Validate that a DataFrame has the required columns.
-    
+
     Args:
         df: DataFrame to validate
         required_columns: List of required column names
-    
+
     Returns:
         Tuple of (is_valid, message)
     """
     missing_columns = [col for col in required_columns if col not in df.columns]
-    
+
     if missing_columns:
         return False, f"Missing required columns: {', '.join(missing_columns)}"
-    
+
     # Check for empty required columns
     for col in required_columns:
         if df[col].isna().all():
             return False, f"Column '{col}' is empty"
-    
+
     return True, "All required columns present and valid"
 
 
@@ -45,11 +47,11 @@ def load_evaluation_data(
 ) -> List[EvaluationItem]:
     """
     Load evaluation data from various sources.
-    
+
     Args:
         data: DataFrame, file path, or JSON string
         mode: Evaluation mode to determine required columns
-    
+
     Returns:
         List of EvaluationItem objects
     """
@@ -71,16 +73,16 @@ def load_evaluation_data(
                 raise ValueError(f"Unable to load data from: {data}")
     else:
         df = data
-    
+
     # Validate columns based on mode
     required_columns = ["input", "expected_output"]
     if mode == EvaluationMode.EVALUATE_EXISTING:
         required_columns.append("output")
-    
+
     is_valid, message = validate_csv_columns(df, required_columns)
     if not is_valid:
         raise ValueError(message)
-    
+
     # Convert to EvaluationItem objects
     items = []
     for idx, row in df.iterrows():
@@ -95,16 +97,20 @@ def load_evaluation_data(
                         metadata[col] = value.isoformat()
                     else:
                         metadata[col] = value
-        
+
         item = EvaluationItem(
             id=str(row.get("id", idx + 1)),
             input=str(row["input"]),
-            output=str(row.get("output", "")) if mode == EvaluationMode.EVALUATE_EXISTING else None,
+            output=(
+                str(row.get("output", ""))
+                if mode == EvaluationMode.EVALUATE_EXISTING
+                else None
+            ),
             expected_output=str(row["expected_output"]),
             metadata=metadata,
         )
         items.append(item)
-    
+
     logger.info(f"Loaded {len(items)} evaluation items")
     return items
 
@@ -116,14 +122,14 @@ def save_evaluation_data(
 ) -> None:
     """
     Save evaluation items to a file.
-    
+
     Args:
         items: List of evaluation items
         output_path: Path to save the file
         format: Output format ('csv' or 'json')
     """
     output_path = Path(output_path)
-    
+
     if format == "csv":
         # Convert to DataFrame
         data = []
@@ -137,19 +143,19 @@ def save_evaluation_data(
             # Add metadata columns
             row.update(item.metadata)
             data.append(row)
-        
+
         df = pd.DataFrame(data)
         df.to_csv(output_path, index=False)
-        
+
     elif format == "json":
         # Convert to JSON
         data = [item.model_dump() for item in items]
         with open(output_path, "w") as f:
             json.dump(data, f, indent=2)
-    
+
     else:
         raise ValueError(f"Unsupported format: {format}")
-    
+
     logger.info(f"Saved {len(items)} items to {output_path}")
 
 
@@ -159,16 +165,16 @@ def create_sample_data(
 ) -> pd.DataFrame:
     """
     Create sample evaluation data for testing.
-    
+
     Args:
         num_items: Number of sample items to create
         include_output: Whether to include output column
-    
+
     Returns:
         DataFrame with sample data
     """
     import random
-    
+
     sample_prompts = [
         "What is the capital of France?",
         "Explain photosynthesis in simple terms.",
@@ -181,7 +187,7 @@ def create_sample_data(
         "Define artificial intelligence.",
         "What year did World War II end?",
     ]
-    
+
     sample_outputs = [
         "The capital of France is Paris.",
         "Photosynthesis is how plants make food using sunlight, water, and carbon dioxide.",
@@ -194,7 +200,7 @@ def create_sample_data(
         "AI is the simulation of human intelligence by machines, especially computer systems.",
         "World War II ended in 1945.",
     ]
-    
+
     data = []
     for i in range(min(num_items, len(sample_prompts))):
         row = {
@@ -202,7 +208,7 @@ def create_sample_data(
             "input": sample_prompts[i],
             "expected_output": sample_outputs[i],
         }
-        
+
         if include_output:
             # Add some variation to outputs
             if random.random() > 0.7:
@@ -210,15 +216,14 @@ def create_sample_data(
                 row["output"] = sample_outputs[i].replace(".", "!")
             else:
                 row["output"] = sample_outputs[i]
-        
+
         data.append(row)
-    
+
     # If we need more items, duplicate with variations
     while len(data) < num_items:
-        base_item = random.choice(data[:len(sample_prompts)])
+        base_item = random.choice(data[: len(sample_prompts)])
         new_item = base_item.copy()
         new_item["id"] = f"sample_{len(data)+1}"
         data.append(new_item)
-    
-    return pd.DataFrame(data)
 
+    return pd.DataFrame(data)

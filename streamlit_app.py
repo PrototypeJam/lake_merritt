@@ -3,7 +3,7 @@
 # git pull origin restore-lake-merritt
 # rm -rf venv (remove old broken virtual environment)
 # uv venv venv (maken good new virtual environment)
-#___ Do Above for Working Snapshot Branch THEN Continue With Below___
+# ___ Do Above for Working Snapshot Branch THEN Continue With Below___
 # source venv/bin/activate
 # uv pip install -e ".[test,dev]"
 # uv pip install -r requirements.txt (OLD - test above before deleting this)
@@ -20,9 +20,10 @@
 """
 AI Evaluation Workbench - Main Application Entry Point
 """
-import streamlit as st
-from pathlib import Path
 import sys
+from pathlib import Path
+
+import streamlit as st
 
 # Add the project root to Python path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -30,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 # Debug imports
 try:
     from core.logging_config import setup_logging
+
     print("✓ Core imports successful")
 except ImportError as e:
     st.error(f"Import error: {e}")
@@ -79,13 +81,15 @@ downloads_page = st.Page(
 )
 
 # Create navigation
-pg = st.navigation([
-    home_page,
-    config_page,
-    eval_setup_page,
-    results_page,
-    downloads_page,
-])
+pg = st.navigation(
+    [
+        home_page,
+        config_page,
+        eval_setup_page,
+        results_page,
+        downloads_page,
+    ]
+)
 
 # Initialize session state
 if "initialized" not in st.session_state:

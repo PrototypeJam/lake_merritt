@@ -195,3 +195,7 @@ cython_debug/
 
 # MacStuff
 .DS_Store
+
+# Evaluation results with potential API keys
+for-claude/eval_results_*_config.json
+for-claude/eval_results_*.json

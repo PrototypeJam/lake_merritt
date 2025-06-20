@@ -1,6 +1,7 @@
 """
 Home page content for AI Evaluation Workbench
 """
+
 import streamlit as st
 
 st.title("🔬 AI Evaluation Workbench")
@@ -65,7 +66,11 @@ with status_cols[2]:
     scorers_selected = len(st.session_state.selected_scorers) > 0
     st.metric(
         "Scorers Selected",
-        f"✅ {len(st.session_state.selected_scorers)}" if scorers_selected else "❌ None",
+        (
+            f"✅ {len(st.session_state.selected_scorers)}"
+            if scorers_selected
+            else "❌ None"
+        ),
         delta=None,
     )
 

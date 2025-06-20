@@ -1,10 +1,12 @@
-import json, logging
+import json
+import logging
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 from core.data_models import EvaluationItem
 
 log = logging.getLogger(__name__)
+
 
 class OTelTraceIngester:
     """Convert the custom manual_traces.json format into EvaluationItem objects."""
@@ -53,14 +55,16 @@ class OTelTraceIngester:
         try:
             steps = tr["steps"]
             start = datetime.fromisoformat(steps[0]["timestamp"])
-            end   = datetime.fromisoformat(steps[-1]["timestamp"])
+            end = datetime.fromisoformat(steps[-1]["timestamp"])
             m["duration_ms"] = (end - start).total_seconds() * 1000.0
         except Exception:
             m["duration_ms"] = None
 
         m["agent_count"] = len(
-            {s["stage"].replace("agent_start_", "")
-             for s in tr.get("steps", [])
-             if s["stage"].startswith("agent_start_")}
+            {
+                s["stage"].replace("agent_start_", "")
+                for s in tr.get("steps", [])
+                if s["stage"].startswith("agent_start_")
+            }
         )
         return m

@@ -1,9 +1,13 @@
-import pathlib, json
+import json
+import pathlib
 from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 
 from core.otel.ingester import OTelTraceIngester
-from core.scoring.otel.criteria_selection_judge import CriteriaSelectionJudgeScorer
+from core.scoring.otel.criteria_selection_judge import \
+    CriteriaSelectionJudgeScorer
+
 
 @pytest.mark.asyncio
 async def test_prompt_building(monkeypatch):

@@ -3,12 +3,11 @@ Unit tests for exact match scorer.
 """
 
 import pytest
+
 from core.data_models import EvaluationItem, ScorerResult
-from core.scoring.exact_match import (
-    ExactMatchScorer,
-    CaseInsensitiveExactMatchScorer,
-    NormalizedExactMatchScorer,
-)
+from core.scoring.exact_match import (CaseInsensitiveExactMatchScorer,
+                                      ExactMatchScorer,
+                                      NormalizedExactMatchScorer)
 
 
 class TestExactMatchScorer:

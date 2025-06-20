@@ -1,0 +1,5130 @@
+Directory structure:
+└── prototypejam-lake_merritt/
+    ├── README.md
+    ├── AGENTS.md
+    ├── LICENSE
+    ├── pyproject.toml
+    ├── runtime.txt
+    ├── streamlit_app.py
+    ├── streamlit_app_home.py
+    ├── .env.template
+    ├── app/
+    │   └── pages/
+    │       ├── 1_config.py
+    │       ├── 2_eval_setup.py
+    │       ├── 3_results.py
+    │       └── 4_downloads.py
+    ├── core/
+    │   ├── __init__.py
+    │   ├── data_models.py
+    │   ├── evaluation.py
+    │   ├── generation.py
+    │   ├── ingestion.py
+    │   ├── logging_config.py
+    │   ├── reporting.py
+    │   └── scoring/
+    │       ├── __init__.py
+    │       ├── base.py
+    │       ├── exact_match.py
+    │       ├── fuzzy_match.py
+    │       └── llm_judge.py
+    ├── services/
+    │   ├── __init__.py
+    │   └── llm_clients.py
+    ├── tests/
+    │   ├── conftest.py
+    │   ├── integration/
+    │   │   └── test_end_to_end.py
+    │   └── unit/
+    │       └── test_exact_match.py
+    ├── utils/
+    │   ├── __init__.py
+    │   ├── file_cache.py
+    │   └── telemetry.py
+    └── .github/
+        └── workflows/
+            └── ci.yml
+
+================================================
+FILE: README.md
+================================================
+# [Lake Merritt](https://lakemerritt.streamlit.app/): AI Evaluation Workbench
+
+A general-purpose, modular, and extensible platform for evaluating AI models and applications, primarily Large Language Models (LLMs).
+
+## Overview
+
+This platform provides a standardized yet flexible environment for:
+- Configuring evaluation parameters and models
+- Uploading evaluation datasets or generating model outputs
+- Applying multiple scoring methods (exact match, fuzzy match, LLM-as-a-Judge)
+- Analyzing results through intuitive visualizations
+- Comparing performance across different models and configurations
+
+## Features
+
+### Current (v0)
+- **Mode A**: Evaluate existing model outputs against expected outputs
+- **Mode B**: Generate outputs from an Actor LLM, then evaluate
+- Multiple scoring methods with configurable parameters
+- Streamlit-based UI with session state management
+- Support for CSV data import/export
+- Modular architecture for easy extension
+
+### Planned
+- Cross-run analysis and comparison
+- Live system monitoring via OpenTelemetry
+- Enhanced LLM-as-a-Judge configuration
+- Prompt versioning and management
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/ai-eval-workbench.git
+cd ai-eval-workbench
+```
+
+2. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. Install dependencies:
+```bash
+# For development (includes testing and linting tools):
+pip install -e ".[test,dev]"
+
+# For standard installation:
+pip install .
+```
+
+4. Copy `.env.template` to `.env` and add your API keys:
+```bash
+cp .env.template .env
+```
+
+## Usage
+
+Run the Streamlit app:
+```bash
+streamlit run streamlit_app.py
+```
+
+Navigate through the pages:
+1. **System Configuration**: Set up API keys and default model parameters
+2. **Evaluation Setup**: Upload data, select scoring methods, and run evaluations
+3. **View Results**: Analyze evaluation outcomes and detailed scores
+4. **Download Center**: Export results in various formats
+
+## Data Format
+
+For Mode A (evaluate existing outputs), your CSV should have:
+- `input`: The prompt/input given to the model
+- `output`: The model's actual output
+- `expected_output`: The ideal/correct output
+- `id` (optional): Unique identifier for each row
+
+For Mode B (generate then evaluate), your CSV needs only:
+- `input`: The prompt/input for the model
+- `expected_output`: The ideal/correct output
+
+## Architecture
+
+The project follows a modular architecture:
+- `app/`: Streamlit UI layer
+- `core/`: Business logic and evaluation orchestration
+- `services/`: External API integrations (LLM providers)
+- `utils/`: Helper utilities
+
+## Contributing
+
+This project emphasizes deep modularity. When adding new features:
+1. Scorers go in `core/scoring/`
+2. LLM providers extend `services/llm_clients.py`
+3. UI pages go in `app/pages/`
+4. All data structures should be defined as Pydantic models in `core/data_models.py`
+
+## License
+
+MIT License - see LICENSE file for details
+
+
+
+================================================
+FILE: AGENTS.md
+================================================
+# AGENTS.md
+
+## Lake Merritt AI Evaluation Workbench
+
+### Environment Setup
+This project requires Python 3.9+ and defines dependencies in `pyproject.toml`.
+We use `uv` for fast, reliable dependency installation.
+
+### Testing Guidelines
+
+**IMPORTANT**: Many tests require API keys that are not available in the CI environment. 
+Always run tests with the marker filter to skip API-dependent tests:
+
+```bash
+# Run all tests EXCEPT those requiring API keys
+pytest -v -m "not requires_api"
+
+# Run only unit tests (recommended for CI)
+pytest tests/unit -v -m "not requires_api"
+
+# If you need to run a specific test file
+pytest tests/unit/test_exact_match.py -v
+```
+
+### IMPORTANT: Testing Protocol
+1. NEVER run tests that require API keys
+2. ALWAYS use: pytest -v -m "not requires_api"
+3. If a test needs internet for pip, that's OK
+4. NEVER commit .env files or expose API keys
+
+### Code Style
+- Use Black for formatting
+- Type hints are required for all new functions
+- Docstrings follow Google style
+
+### Common Tasks
+- **Install dependencies**: `uv pip install -e ".[test,dev]"`
+- **Run safe tests**: `pytest -v -m "not requires_api"`
+- **Run a specific scorer test**: `pytest tests/unit/test_exact_match.py -v`
+- **Check types**: `mypy core --ignore-missing-imports`
+- **Format code**: `black core tests`
+
+### Test Categories
+- **Unit tests** (`tests/unit/`): Test individual components in isolation
+- **Integration tests** (`tests/integration/`): Test component interactions
+- **API tests**: Marked with `@pytest.mark.requires_api` - these need real API credentials
+
+### Important Notes
+- Do NOT commit API keys or .env files
+- The Streamlit app requires manual testing (not suitable for automated CI)
+- Focus test efforts on the `core/` module business logic
+- If uv is not available, fallback to regular pip
+- Tests marked with `requires_api` will be skipped in CI environments
+
+### Quick Test Commands
+```bash
+# Before committing - run the safe test suite
+pytest -v -m "not requires_api"
+
+# Test a specific module
+pytest tests/unit/test_exact_match.py -v
+
+# Run with coverage (excluding API tests)
+pytest -v -m "not requires_api" --cov=core --cov-report=term-missing
+```
+
+
+
+================================================
+FILE: LICENSE
+================================================
+MIT License
+
+Copyright (c) 2024 [Your Name/Organization]
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+
+================================================
+FILE: pyproject.toml
+================================================
+# In file: pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-eval-workbench"
+version = "0.1.0"
+description = "Lake Merritt is a modular platform for evaluating AI models and applications"
+readme = "README.md"
+requires-python = ">=3.9, !=3.9.7"
+license = { file = "LICENSE" }
+dependencies = [
+    "streamlit>=1.28.0",
+    "pandas>=2.0.0",
+    "pydantic>=2.0.0",
+    "openai>=1.0.0",
+    "anthropic>=0.18.0",
+    "google-generativeai>=0.3.0",
+    "python-dotenv>=1.0.0",
+    "rapidfuzz>=3.6.0",
+    "aiofiles>=23.0.0",
+    "numpy>=1.24.0",
+    "nest-asyncio>=1.5",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+]
+dev = [
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+# --- THIS IS THE FIX ---
+# We are adding this new section and moving the 'packages'
+# list here from the [project] section above. This is where
+# setuptools expects to find it.
+[tool.setuptools]
+packages = ["app", "core", "services", "utils"]
+
+
+
+================================================
+FILE: runtime.txt
+================================================
+python-3.11
+
+
+
+================================================
+FILE: streamlit_app.py
+================================================
+# git fetch origin
+# git checkout restore-lake-merritt
+# git pull origin restore-lake-merritt
+# rm -rf venv (remove old broken virtual environment)
+# uv venv venv (maken good new virtual environment)
+#___ Do Above for Working Snapshot Branch THEN Continue With Below___
+# source venv/bin/activate
+# uv pip install -e ".[test,dev]"
+# uv pip install -r requirements.txt (OLD - test above before deleting this)
+# pip install --upgrade pip (maybe not needed?)
+# streamlit run streamlit_app.py
+# ========================================
+# rm -rf venv (if needed)
+# uv venv venv
+# source venv/bin/activate
+# uv pip install -e ".[test,dev]"
+# streamlit run streamlit_app.py
+
+
+"""
+AI Evaluation Workbench - Main Application Entry Point
+"""
+import streamlit as st
+from pathlib import Path
+import sys
+
+# Add the project root to Python path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from core.logging_config import setup_logging
+
+# Set up logging first
+setup_logging()
+
+# Page configuration
+st.set_page_config(
+    page_title="AI Evaluation Workbench",
+    page_icon="🔬",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# Define pages using st.Page
+home_page = st.Page(
+    "streamlit_app_home.py",
+    title="Home",
+    icon="🏠",
+    default=True,
+)
+
+config_page = st.Page(
+    "app/pages/1_config.py",
+    title="System Configuration",
+    icon="⚙️",
+)
+
+eval_setup_page = st.Page(
+    "app/pages/2_eval_setup.py",
+    title="Evaluation Setup",
+    icon="📄",
+)
+
+results_page = st.Page(
+    "app/pages/3_results.py",
+    title="View Results",
+    icon="📊",
+)
+
+downloads_page = st.Page(
+    "app/pages/4_downloads.py",
+    title="Download Center",
+    icon="⬇️",
+)
+
+# Create navigation
+pg = st.navigation([
+    home_page,
+    config_page,
+    eval_setup_page,
+    results_page,
+    downloads_page,
+])
+
+# Initialize session state
+if "initialized" not in st.session_state:
+    st.session_state.initialized = True
+    st.session_state.api_keys = {}
+    st.session_state.model_configs = {}
+    st.session_state.eval_data = None
+    st.session_state.eval_results = None
+    st.session_state.selected_scorers = []
+    st.session_state.run_metadata = {}
+
+# Run the selected page
+pg.run()
+
+
+
+================================================
+FILE: streamlit_app_home.py
+================================================
+"""
+Home page content for AI Evaluation Workbench
+"""
+import streamlit as st
+
+st.title("🔬 AI Evaluation Workbench")
+st.markdown("---")
+
+col1, col2 = st.columns([2, 1])
+
+with col1:
+    st.markdown(
+        """
+    Welcome to the AI Evaluation Workbench, a modular platform for evaluating 
+    Large Language Models (LLMs) and AI applications.
+    
+    ### Getting Started
+    
+    1. **Configure System** - Set up your API keys and default model parameters
+    2. **Setup Evaluation** - Upload data and select scoring methods
+    3. **View Results** - Analyze evaluation outcomes
+    4. **Download Results** - Export data for further analysis
+    
+    ### Evaluation Modes
+    
+    - **Mode A**: Evaluate pre-existing model outputs against expected outputs
+    - **Mode B**: Generate outputs from a model, then evaluate them
+    
+    Use the sidebar to navigate between pages.
+    """
+    )
+
+with col2:
+    st.info(
+        """
+    **Quick Tips:**
+    - Start with the System Configuration page
+    - Prepare your CSV data in the required format
+    - Multiple scorers can be applied simultaneously
+    - Results are preserved during your session
+    """
+    )
+
+# Status dashboard
+st.markdown("### Current Status")
+status_cols = st.columns(4)
+
+with status_cols[0]:
+    api_configured = len(st.session_state.api_keys) > 0
+    st.metric(
+        "API Configuration",
+        "✅ Configured" if api_configured else "❌ Not Set",
+        delta=None,
+    )
+
+with status_cols[1]:
+    data_loaded = st.session_state.eval_data is not None
+    st.metric(
+        "Data Loaded",
+        "✅ Ready" if data_loaded else "❌ No Data",
+        delta=None,
+    )
+
+with status_cols[2]:
+    scorers_selected = len(st.session_state.selected_scorers) > 0
+    st.metric(
+        "Scorers Selected",
+        f"✅ {len(st.session_state.selected_scorers)}" if scorers_selected else "❌ None",
+        delta=None,
+    )
+
+with status_cols[3]:
+    results_available = st.session_state.eval_results is not None
+    st.metric(
+        "Results",
+        "✅ Available" if results_available else "❌ Not Run",
+        delta=None,
+    )
+
+# Footer
+st.markdown("---")
+st.markdown(
+    """
+    <div style='text-align: center; color: gray;'>
+        AI Evaluation Workbench v0.1.0 | 
+        <a href='https://github.com/yourusername/ai-eval-workbench'>GitHub</a>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+
+================================================
+FILE: .env.template
+================================================
+# API Keys for LLM Providers
+# Copy this file to .env and fill in your actual API keys
+
+# OpenAI
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Anthropic (Claude)
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# Google AI (Gemini)
+GOOGLE_API_KEY=your_google_api_key_here
+
+# Optional: Default model configurations
+DEFAULT_TEMPERATURE=0.7
+DEFAULT_MAX_TOKENS=1000
+
+# Optional: Logging level (DEBUG, INFO, WARNING, ERROR)
+LOG_LEVEL=INFO
+
+# Optional: Enable telemetry (true/false)
+ENABLE_TELEMETRY=false
+
+
+
+================================================
+FILE: app/pages/1_config.py
+================================================
+"""
+Page 1: System & Model Configuration
+"""
+
+import streamlit as st
+from typing import Dict, Any
+import os
+from dotenv import load_dotenv
+from services.llm_clients import create_llm_client
+import asyncio
+
+# Load environment variables
+load_dotenv()
+
+st.title("\u2699\ufe0f System & Model Configuration")
+st.markdown("Configure API keys and default model parameters for evaluations.")
+
+# API Keys Section
+st.header("1. API Keys")
+st.info("Your API keys are stored only for this session and are not saved to disk.")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    openai_key = st.text_input(
+        "OpenAI API Key",
+        value=st.session_state.api_keys.get("openai", ""),
+        type="password",
+        help="Required for GPT models",
+    )
+    if openai_key:
+        st.session_state.api_keys["openai"] = openai_key
+
+    anthropic_key = st.text_input(
+        "Anthropic API Key",
+        value=st.session_state.api_keys.get("anthropic", ""),
+        type="password",
+        help="Required for Claude models",
+    )
+    if anthropic_key:
+        st.session_state.api_keys["anthropic"] = anthropic_key
+
+with col2:
+    google_key = st.text_input(
+        "Google AI API Key",
+        value=st.session_state.api_keys.get("google", ""),
+        type="password",
+        help="Required for Gemini models",
+    )
+    if google_key:
+        st.session_state.api_keys["google"] = google_key
+
+# Default Model Configuration
+st.header("2. Default Model Configuration")
+st.markdown("Set default parameters for LLM-as-a-Judge and other model operations.")
+
+# Initialize default configs if not present
+if "default_judge_config" not in st.session_state.model_configs:
+    st.session_state.model_configs["default_judge_config"] = {
+        "provider": "openai",
+        "model": "gpt-4",
+        "temperature": 0.3,
+        "max_tokens": 1000,
+        "system_prompt": """You are an expert evaluator. Compare the actual output to the expected output and provide:
+1. A score from 0.0 to 1.0 (where 1.0 is perfect match)
+2. A brief reasoning for your score
+3. Any specific errors or discrepancies noted
+
+Respond in JSON format:
+{
+    "score": 0.0-1.0,
+    "reasoning": "explanation",
+    "errors": ["error1", "error2"] or []
+}""",
+    }
+
+judge_config = st.session_state.model_configs["default_judge_config"]
+
+col1, col2 = st.columns([1, 2])
+
+with col1:
+    judge_config["provider"] = st.selectbox(
+        "Judge Model Provider",
+        ["openai", "anthropic", "google"],
+        index=["openai", "anthropic", "google"].index(judge_config["provider"]),
+    )
+
+    # Model selection based on provider
+    model_options = {
+        "openai": ["gpt-4", "gpt-4-turbo-preview", "gpt-3.5-turbo"],
+        "anthropic": [
+            "claude-3-opus-20240229",
+            "claude-3-sonnet-20240229",
+            "claude-3-haiku-20240307",
+        ],
+        "google": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro"],
+    }
+
+    current_models = model_options[judge_config["provider"]]
+    if judge_config["model"] not in current_models:
+        judge_config["model"] = current_models[0]
+
+    judge_config["model"] = st.selectbox(
+        "Judge Model",
+        current_models,
+        index=current_models.index(judge_config["model"]),
+    )
+
+    judge_config["temperature"] = st.slider(
+        "Temperature",
+        min_value=0.0,
+        max_value=1.0,
+        value=judge_config["temperature"],
+        step=0.1,
+        help="Lower values make output more deterministic",
+    )
+
+    judge_config["max_tokens"] = st.number_input(
+        "Max Tokens",
+        min_value=100,
+        max_value=4000,
+        value=judge_config["max_tokens"],
+        step=100,
+    )
+
+with col2:
+    judge_config["system_prompt"] = st.text_area(
+        "Judge System Prompt",
+        value=judge_config["system_prompt"],
+        height=300,
+        help="Instructions for the LLM judge on how to evaluate outputs",
+    )
+
+# Save Configuration
+st.header("3. Save Configuration")
+
+if st.button(
+    "\U0001f4be Save & Validate All Configurations",
+    type="primary",
+    use_container_width=True,
+):
+
+    async def validate_key(provider: str, key: str) -> bool:
+        """Test a single API key with a lightweight model call.
+
+        Args:
+            provider: Name of the provider.
+            key: API key to validate.
+
+        Returns:
+            True if the key is valid, otherwise False.
+        """
+
+        st.session_state.validation_results[provider] = {"status": "pending"}
+        try:
+            test_models: Dict[str, str] = {
+                "openai": "gpt-3.5-turbo",
+                "anthropic": "claude-3-haiku-20240307",
+                "google": "gemini-1.5-flash",
+            }
+            test_prompt = "Generate a single, short, safe-for-work sentence about space exploration."
+            messages = [{"role": "user", "content": test_prompt}]
+
+            client = create_llm_client(provider, key)
+            response = await client.generate(
+                messages,
+                model=test_models.get(provider),
+                temperature=0.7,
+                max_tokens=100,
+            )
+
+            st.session_state.validation_results[provider] = {
+                "status": "success",
+                "response": response,
+            }
+            return True
+        except Exception as e:  # noqa: BLE001
+            st.session_state.validation_results[provider] = {
+                "status": "failure",
+                "error": str(e),
+            }
+            if provider in st.session_state.api_keys:
+                st.session_state.api_keys[provider] = ""
+            return False
+
+    if "validation_results" not in st.session_state:
+        st.session_state.validation_results = {}
+
+    async def run_all_validations() -> None:
+        """Run validation for each provided API key concurrently."""
+
+        tasks = []
+        for provider, key in st.session_state.api_keys.items():
+            if key:
+                tasks.append(validate_key(provider, key))
+        await asyncio.gather(*tasks)
+
+    asyncio.run(run_all_validations())
+
+    all_valid = True
+    for provider, result in st.session_state.validation_results.items():
+        if result.get("status") == "success":
+            st.success(f"✅ {provider.title()} API key is valid and working!")
+            with st.expander(f"Test response from {provider.title()}", expanded=False):
+                st.write(result["response"])
+        elif result.get("status") == "failure":
+            st.error(
+                f"❌ {provider.title()} API key validation failed: {result['error']}"
+            )
+            all_valid = False
+
+    if all_valid and any(st.session_state.api_keys.values()):
+        st.session_state.model_configs["default_judge_config"] = judge_config
+        st.success("All configurations saved successfully.")
+    elif not any(st.session_state.api_keys.values()):
+        st.error("Please provide at least one API key.")
+    else:
+        st.warning("Configuration not saved. Please fix invalid keys and try again.")
+
+# Navigation hint
+st.markdown("---")
+st.info(
+    "\u2705 Once configured, proceed to **Evaluation Setup** to upload data and select scorers."
+)
+
+
+
+================================================
+FILE: app/pages/2_eval_setup.py
+================================================
+"""
+Page 2: Evaluation Setup - Data Upload and Scoring Configuration
+"""
+
+import streamlit as st
+import pandas as pd
+from typing import List, Dict, Any
+import asyncio
+import nest_asyncio
+from io import StringIO
+
+from core.ingestion import load_evaluation_data, validate_csv_columns
+from core.generation import generate_outputs
+from core.evaluation import run_evaluation_batch
+from core.data_models import EvaluationItem, EvaluationMode
+from core.scoring import get_available_scorers
+from services.llm_clients import create_llm_client
+
+st.title("📄 Evaluation Setup")
+st.markdown("Upload data, configure evaluation mode, and select scoring methods.")
+
+# Check prerequisites
+if not st.session_state.api_keys:
+    st.warning("⚠️ Please configure API keys in the System Configuration page first.")
+    st.stop()
+
+# Evaluation Mode Selection
+st.header("1. Select Evaluation Mode")
+mode = st.radio(
+    "Choose how you want to evaluate:",
+    [EvaluationMode.EVALUATE_EXISTING, EvaluationMode.GENERATE_THEN_EVALUATE],
+    format_func=lambda x: (
+        "Mode A: Evaluate Existing Outputs"
+        if x == EvaluationMode.EVALUATE_EXISTING
+        else "Mode B: Generate Outputs, Then Evaluate"
+    ),
+    horizontal=True,
+)
+
+st.session_state.evaluation_mode = mode
+
+# File Upload Section
+st.header("2. Upload Evaluation Data")
+
+if mode == EvaluationMode.EVALUATE_EXISTING:
+    st.info(
+        "Upload a CSV with columns: `input`, `output`, `expected_output` (and optionally `id`)"
+    )
+else:
+    st.info(
+        "Upload a CSV with columns: `input`, `expected_output` (and optionally `id`)"
+    )
+
+uploaded_file = st.file_uploader(
+    "Choose a CSV file",
+    type="csv",
+    help="Maximum file size: 200MB",
+)
+
+if uploaded_file is not None:
+    MAX_FILE_SIZE_MB = 100
+    if uploaded_file.size > MAX_FILE_SIZE_MB * 1024 * 1024:
+        st.error(
+            f"❌ File is too large ({uploaded_file.size / 1024**2:.1f}MB). Maximum size is {MAX_FILE_SIZE_MB}MB."
+        )
+        st.stop()
+
+    try:
+        # Load and validate data
+        df = pd.read_csv(uploaded_file)
+
+        # Check for empty dataframe
+        if df.empty:
+            st.error(
+                "❌ The uploaded CSV file is empty. Please provide a file with data."
+            )
+            st.stop()
+
+        # Validate columns based on mode
+        required_cols = ["input", "expected_output"]
+        if mode == EvaluationMode.EVALUATE_EXISTING:
+            required_cols.append("output")
+
+        is_valid, message = validate_csv_columns(df, required_cols)
+
+        if not is_valid:
+            st.error(f"❌ CSV Validation Failed: {message}")
+            st.info(
+                f"📋 Required columns for this mode: {', '.join([f'`{col}`' for col in required_cols])}"
+            )
+            st.info(
+                f"📄 Your file has: {', '.join([f'`{col}`' for col in df.columns.tolist()])}"
+            )
+            st.stop()
+
+        # Show data preview
+        st.success(f"✅ Loaded {len(df)} rows successfully!")
+
+        with st.expander("📊 Data Preview (first 5 rows)"):
+            st.dataframe(df.head(), use_container_width=True)
+
+        # Convert to evaluation items
+        eval_items = load_evaluation_data(df, mode)
+        st.session_state.eval_data = eval_items
+
+    except pd.errors.EmptyDataError:
+        st.error("❌ The uploaded file appears to be empty or corrupted.")
+        st.info("Please ensure your CSV file contains data and is properly formatted.")
+        st.stop()
+    except pd.errors.ParserError as e:
+        st.error(f"❌ Error parsing CSV file: {str(e)}")
+        st.info(
+            "💡 Common issues: Inconsistent number of columns per row or unescaped commas within fields."
+        )
+        st.stop()
+    except UnicodeDecodeError:
+        st.error(
+            "❌ File encoding error. Please ensure your CSV is saved in UTF-8 format."
+        )
+        st.info("💡 How to fix: In Excel, use 'Save As' and choose 'CSV UTF-8' format.")
+        st.stop()
+    except Exception as e:
+        st.error(f"❌ Unexpected error loading file: {str(e)}")
+        logger.exception("Failed to load uploaded file")
+        st.stop()
+
+# Mode B: Actor Model Configuration
+if mode == EvaluationMode.GENERATE_THEN_EVALUATE and st.session_state.eval_data:
+    st.header("3. Configure Actor Model")
+    st.markdown("Select the model that will generate outputs for your inputs.")
+
+    col1, col2 = st.columns([1, 2])
+
+    with col1:
+        actor_provider = st.selectbox(
+            "Actor Model Provider",
+            ["openai", "anthropic", "google"],
+            key="actor_provider",
+        )
+
+        # Model selection based on provider
+        model_options = {
+            "openai": ["gpt-4", "gpt-4-turbo-preview", "gpt-3.5-turbo"],
+            "anthropic": [
+                "claude-3-opus-20240229",
+                "claude-3-sonnet-20240229",
+                "claude-3-haiku-20240307",
+            ],
+            "google": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro"],
+        }
+
+        actor_model = st.selectbox(
+            "Actor Model",
+            model_options[actor_provider],
+            key="actor_model",
+        )
+
+        actor_temperature = st.slider(
+            "Temperature",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.7,
+            step=0.1,
+            key="actor_temp",
+        )
+
+        actor_max_tokens = st.number_input(
+            "Max Tokens",
+            min_value=100,
+            max_value=4000,
+            value=1000,
+            step=100,
+            key="actor_tokens",
+        )
+
+    with col2:
+        actor_system_prompt = st.text_area(
+            "Actor System Prompt (optional)",
+            placeholder="Leave empty to use the input as-is, or provide instructions for how the model should respond",
+            height=200,
+            key="actor_prompt",
+        )
+
+    # Generate outputs button
+    if st.button("🚀 Generate Outputs", type="primary", key="generate_btn"):
+        with st.spinner("Generating outputs... This may take a few minutes."):
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+
+            # Create actor configuration
+            actor_config = {
+                "provider": actor_provider,
+                "model": actor_model,
+                "temperature": actor_temperature,
+                "max_tokens": actor_max_tokens,
+                "system_prompt": actor_system_prompt or None,
+                "api_key": st.session_state.api_keys.get(actor_provider),
+            }
+
+            try:
+                # Run generation
+                updated_items = asyncio.run(
+                    generate_outputs(
+                        st.session_state.eval_data,
+                        actor_config,
+                        progress_callback=lambda i, total: (
+                            progress_bar.progress(i / total),
+                            status_text.text(f"Processing {i}/{total} items..."),
+                        ),
+                    )
+                )
+
+                st.session_state.eval_data = updated_items
+                st.success(
+                    f"✅ Successfully generated outputs for {len(updated_items)} items!"
+                )
+
+            except Exception as e:
+                st.error(f"Error generating outputs: {str(e)}")
+                st.stop()
+
+# Scorer Selection Section
+if st.session_state.eval_data and (
+    mode == EvaluationMode.EVALUATE_EXISTING
+    or (
+        mode == EvaluationMode.GENERATE_THEN_EVALUATE
+        and all(item.output for item in st.session_state.eval_data)
+    )
+):
+    st.header("4. Select Scoring Methods")
+
+    available_scorers = get_available_scorers()
+
+    selected_scorers = st.multiselect(
+        "Choose one or more scoring methods:",
+        options=list(available_scorers.keys()),
+        default=["exact_match"],
+        format_func=lambda x: available_scorers[x]["display_name"],
+        help="Each scorer will evaluate all items in your dataset",
+    )
+
+    st.session_state.selected_scorers = selected_scorers
+
+    # Scorer-specific configuration
+    scorer_configs = {}
+
+    for scorer_name in selected_scorers:
+        scorer_info = available_scorers[scorer_name]
+
+        with st.expander(f"⚙️ Configure {scorer_info['display_name']}"):
+            st.markdown(scorer_info["description"])
+
+            if scorer_name == "fuzzy_match":
+                threshold = st.slider(
+                    "Similarity Threshold",
+                    min_value=0.0,
+                    max_value=1.0,
+                    value=0.8,
+                    step=0.05,
+                    help="Minimum similarity score to consider a match",
+                    key=f"{scorer_name}_threshold",
+                )
+                scorer_configs[scorer_name] = {"threshold": threshold}
+
+            elif scorer_name == "llm_judge":
+                # Use default judge config or allow override
+                use_default = st.checkbox(
+                    "Use default judge configuration",
+                    value=True,
+                    key=f"{scorer_name}_use_default",
+                )
+
+                if use_default:
+                    scorer_configs[scorer_name] = st.session_state.model_configs[
+                        "default_judge_config"
+                    ].copy()
+                    st.json(scorer_configs[scorer_name])
+                else:
+                    # Allow custom configuration
+                    judge_provider = st.selectbox(
+                        "Judge Provider",
+                        ["openai", "anthropic", "google"],
+                        key=f"{scorer_name}_provider",
+                    )
+
+                    model_options = {
+                        "openai": ["gpt-4", "gpt-4-turbo-preview", "gpt-3.5-turbo"],
+                        "anthropic": [
+                            "claude-3-opus-20240229",
+                            "claude-3-sonnet-20240229",
+                        ],
+                        "google": ["gemini-1.5-pro", "gemini-1.5-flash"],
+                    }
+
+                    judge_model = st.selectbox(
+                        "Judge Model",
+                        model_options[judge_provider],
+                        key=f"{scorer_name}_model",
+                    )
+
+                    judge_temp = st.slider(
+                        "Temperature",
+                        0.0,
+                        1.0,
+                        0.3,
+                        0.1,
+                        key=f"{scorer_name}_temp",
+                    )
+
+                    judge_prompt = st.text_area(
+                        "Judge Prompt",
+                        value=st.session_state.model_configs["default_judge_config"][
+                            "system_prompt"
+                        ],
+                        height=150,
+                        key=f"{scorer_name}_prompt",
+                    )
+
+                    scorer_configs[scorer_name] = {
+                        "provider": judge_provider,
+                        "model": judge_model,
+                        "temperature": judge_temp,
+                        "system_prompt": judge_prompt,
+                        "api_key": st.session_state.api_keys.get(judge_provider),
+                    }
+            else:
+                # No configuration needed
+                scorer_configs[scorer_name] = {}
+
+    # Run Evaluation Button
+    st.header("5. Run Evaluation")
+
+    col1, col2, col3 = st.columns([2, 1, 1])
+
+    with col1:
+        if st.button(
+            "🔬 Start Evaluation",
+            type="primary",
+            use_container_width=True,
+            disabled=not selected_scorers,
+        ):
+            with st.spinner("Running evaluation..."):
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+
+                try:
+                    # DEVELOPER NOTE: This specific pattern for getting the event loop is
+                    # the recommended best practice for using asyncio within Streamlit.
+                    # It safely gets the existing event loop or creates a new one for the
+                    # current thread if one doesn't exist, avoiding the common
+                    # `RuntimeError` that `asyncio.run()` can cause. [2, 3]
+                    try:
+                        loop = asyncio.get_event_loop()
+                    except RuntimeError:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+
+                    results = loop.run_until_complete(
+                        run_evaluation_batch(
+                            st.session_state.eval_data,
+                            selected_scorers,
+                            scorer_configs,
+                            st.session_state.api_keys,
+                            batch_size=10,
+                            progress_callback=lambda i, total: (
+                                progress_bar.progress(i / total),
+                                status_text.text(f"Evaluating {i}/{total} items..."),
+                            ),
+                        )
+                    )
+
+                    st.session_state.eval_results = results
+                    st.success("✅ Evaluation completed successfully!")
+
+                except Exception as e:
+                    import logging
+
+                    logger = logging.getLogger(__name__)
+                    logger.exception("Evaluation failed")
+                    st.error(f"Error during evaluation: {str(e)}")
+
+    with col2:
+        st.metric("Total Items", len(st.session_state.eval_data))
+
+    with col3:
+        st.metric("Selected Scorers", len(selected_scorers))
+
+# Navigation hints
+if not st.session_state.eval_data:
+    st.info("👆 Upload a CSV file to begin evaluation setup.")
+elif mode == EvaluationMode.GENERATE_THEN_EVALUATE and not all(
+    item.output for item in st.session_state.eval_data
+):
+    st.info("👆 Generate outputs before selecting scorers.")
+elif not st.session_state.selected_scorers:
+    st.info("👆 Select at least one scoring method to run evaluation.")
+
+
+
+================================================
+FILE: app/pages/3_results.py
+================================================
+"""
+Page 3: View Evaluation Results
+"""
+
+import streamlit as st
+import pandas as pd
+import json
+from typing import Dict, Any, List
+
+st.title("📊 Evaluation Results")
+st.markdown("Analyze evaluation outcomes and explore detailed scoring information.")
+
+# Check if results are available
+if st.session_state.eval_results is None:
+    st.warning("⚠️ No evaluation results available. Please run an evaluation first.")
+    st.stop()
+
+results = st.session_state.eval_results
+
+# Summary Statistics
+st.header("1. Summary Statistics")
+
+# Create columns for each scorer
+scorer_cols = st.columns(len(results.summary_stats))
+
+for idx, (scorer_name, stats) in enumerate(results.summary_stats.items()):
+    with scorer_cols[idx]:
+        # Format scorer name for display
+        display_name = scorer_name.replace("_", " ").title()
+
+        st.markdown(f"### {display_name}")
+
+        # Main metric
+        accuracy = stats.get("accuracy", 0)
+        st.metric(
+            "Accuracy",
+            f"{accuracy:.1%}",
+            delta=None,
+            help="Percentage of items that passed this scorer",
+        )
+
+        # Additional stats
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Passed", stats.get("passed", 0))
+        with col2:
+            st.metric("Failed", stats.get("failed", 0))
+
+        # Score distribution for fuzzy match and LLM judge
+        if (
+            scorer_name in ["fuzzy_match", "llm_judge"]
+            and "score_distribution" in stats
+        ):
+            st.markdown("**Score Distribution**")
+            score_dist = stats["score_distribution"]
+            st.bar_chart(score_dist)
+
+        if stats.get("errors", 0) > 0:
+            st.error(f"⚠️ {stats['errors']} items failed to score")
+
+# Add this new block after the for loop to show a total error summary:
+total_errors = sum(s.get("errors", 0) for s in results.summary_stats.values())
+if total_errors > 0:
+    st.warning(
+        f"⚠️ A total of {total_errors} scoring errors occurred across all scorers. Check the detailed results below for individual error messages."
+    )
+# Detailed Results Table
+st.header("2. Detailed Results")
+
+
+# Convert results to DataFrame for display
+def results_to_dataframe(results) -> pd.DataFrame:
+    data = []
+    for item in results.items:
+        row = {
+            "ID": item.id or f"Item {results.items.index(item) + 1}",
+            "Input": item.input[:100] + "..." if len(item.input) > 100 else item.input,
+            "Output": (
+                item.output[:100] + "..." if len(item.output) > 100 else item.output
+            ),
+            "Expected": (
+                item.expected_output[:100] + "..."
+                if len(item.expected_output) > 100
+                else item.expected_output
+            ),
+        }
+
+        # Add scores for each scorer
+        for score in item.scores:
+            row[f"{score.scorer_name}_score"] = score.score
+            row[f"{score.scorer_name}_passed"] = "✅" if score.passed else "❌"
+
+        data.append(row)
+
+    return pd.DataFrame(data)
+
+
+df_results = results_to_dataframe(results)
+
+# Display options
+col1, col2, col3 = st.columns([1, 1, 2])
+
+with col1:
+    show_full_text = st.checkbox("Show full text", value=False)
+
+with col2:
+    filter_failures = st.checkbox("Show failures only", value=False)
+
+with col3:
+    # Filter by scorer failures
+    if filter_failures:
+        scorer_filter = st.multiselect(
+            "Filter by scorer failures:",
+            [s for s in results.summary_stats.keys()],
+            default=[],
+        )
+
+# Apply filters
+display_df = df_results.copy()
+
+if filter_failures and scorer_filter:
+    # Filter to show only items that failed selected scorers
+    mask = pd.Series([False] * len(display_df))
+    for scorer in scorer_filter:
+        mask |= display_df[f"{scorer}_passed"] == "❌"
+    display_df = display_df[mask]
+
+# Show the table
+st.dataframe(
+    display_df,
+    use_container_width=True,
+    hide_index=True,
+    height=400,
+)
+
+# Detailed Item View
+st.header("3. Detailed Item Analysis")
+
+# Select an item to view details
+item_ids = [item.id or f"Item {idx + 1}" for idx, item in enumerate(results.items)]
+selected_item_id = st.selectbox("Select an item to view details:", item_ids)
+
+# Find the selected item
+selected_idx = item_ids.index(selected_item_id)
+selected_item = results.items[selected_idx]
+
+# Display item details
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    st.markdown("### Input")
+    st.text_area(
+        "", value=selected_item.input, height=150, disabled=True, key="detail_input"
+    )
+
+    st.markdown("### Expected Output")
+    st.text_area(
+        "",
+        value=selected_item.expected_output,
+        height=150,
+        disabled=True,
+        key="detail_expected",
+    )
+
+with col2:
+    st.markdown("### Actual Output")
+    st.text_area(
+        "", value=selected_item.output, height=150, disabled=True, key="detail_output"
+    )
+
+    st.markdown("### Metadata")
+    if selected_item.metadata:
+        st.json(selected_item.metadata)
+    else:
+        st.text("No metadata available")
+
+# Scorer Results for Selected Item
+st.markdown("### Scoring Details")
+
+for score in selected_item.scores:
+    with st.expander(
+        f"{score.scorer_name.replace('_', ' ').title()} - {'✅ Passed' if score.passed else '❌ Failed'}"
+    ):
+        col1, col2 = st.columns([1, 3])
+
+        with col1:
+            st.metric("Score", f"{score.score:.3f}")
+            st.metric("Passed", "Yes" if score.passed else "No")
+
+        with col2:
+            if score.reasoning:
+                st.markdown("**Reasoning:**")
+                st.write(score.reasoning)
+
+            if score.details:
+                st.markdown("**Additional Details:**")
+                if isinstance(score.details, dict):
+                    st.json(score.details)
+                else:
+                    st.write(score.details)
+
+# Export Results Preview
+st.header("4. Results Summary")
+
+st.info("💡 Go to the **Downloads** page to export full results in various formats.")
+
+# Show configuration used
+with st.expander("📋 Evaluation Configuration"):
+    st.json(results.config)
+
+# Show run metadata
+with st.expander("📊 Run Metadata"):
+    metadata = {
+        "Total Items": len(results.items),
+        "Evaluation Mode": results.metadata.get("mode", "Unknown"),
+        "Run Timestamp": results.metadata.get("timestamp", "Unknown"),
+        "Scorers Used": list(results.summary_stats.keys()),
+    }
+    st.json(metadata)
+
+
+
+================================================
+FILE: app/pages/4_downloads.py
+================================================
+"""
+Page 4: Download Center
+"""
+import streamlit as st
+import pandas as pd
+import json
+from datetime import datetime
+import io
+from typing import Dict, Any
+
+from core.reporting import (
+    results_to_csv,
+    results_to_json,
+    generate_summary_report,
+)
+
+st.title("⬇️ Download Center")
+st.markdown("Export evaluation results and related artifacts.")
+
+# Check if results are available
+if st.session_state.eval_results is None:
+    st.warning("⚠️ No evaluation results available. Please run an evaluation first.")
+    st.stop()
+
+results = st.session_state.eval_results
+
+# File naming
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+base_filename = f"eval_results_{timestamp}"
+
+# Download Options
+st.header("1. Evaluation Results")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown("### 📄 CSV Format")
+    st.markdown("Flat table format, ideal for Excel or data analysis tools.")
+    
+    csv_data = results_to_csv(results)
+    st.download_button(
+        label="Download Results CSV",
+        data=csv_data,
+        file_name=f"{base_filename}.csv",
+        mime="text/csv",
+        use_container_width=True,
+    )
+
+with col2:
+    st.markdown("### 📋 JSON Format")
+    st.markdown("Structured format with full details and metadata.")
+    
+    json_data = results_to_json(results)
+    st.download_button(
+        label="Download Results JSON",
+        data=json_data,
+        file_name=f"{base_filename}.json",
+        mime="application/json",
+        use_container_width=True,
+    )
+
+with col3:
+    st.markdown("### 📊 Summary Report")
+    st.markdown("Human-readable summary with key insights.")
+    
+    summary_report = generate_summary_report(results)
+    st.download_button(
+        label="Download Summary Report",
+        data=summary_report,
+        file_name=f"{base_filename}_summary.md",
+        mime="text/markdown",
+        use_container_width=True,
+    )
+
+# Additional Exports
+st.header("2. Additional Exports")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.markdown("### 🔧 Configuration Export")
+    st.markdown("Export the configuration used for this evaluation run.")
+    
+    config_export = {
+        "evaluation_config": results.config,
+        "model_configs": st.session_state.model_configs,
+        "selected_scorers": st.session_state.selected_scorers,
+        "timestamp": timestamp,
+    }
+    
+    st.download_button(
+        label="Download Configuration",
+        data=json.dumps(config_export, indent=2),
+        file_name=f"{base_filename}_config.json",
+        mime="application/json",
+        use_container_width=True,
+    )
+
+with col2:
+    st.markdown("### 📈 Detailed Scores")
+    st.markdown("Export individual scores for each item and scorer.")
+    
+    # Create detailed scores DataFrame
+    scores_data = []
+    for item in results.items:
+        for score in item.scores:
+            scores_data.append({
+                "item_id": item.id or f"Item_{results.items.index(item) + 1}",
+                "scorer": score.scorer_name,
+                "score": score.score,
+                "passed": score.passed,
+                "reasoning": score.reasoning,
+            })
+    
+    scores_df = pd.DataFrame(scores_data)
+    scores_csv = scores_df.to_csv(index=False)
+    
+    st.download_button(
+        label="Download Detailed Scores",
+        data=scores_csv,
+        file_name=f"{base_filename}_detailed_scores.csv",
+        mime="text/csv",
+        use_container_width=True,
+    )
+
+# Future Placeholders
+st.header("3. Coming Soon")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.markdown("### 📝 Logs")
+    st.markdown("*Detailed execution logs will be available in a future update.*")
+    st.button("Download Logs", disabled=True, use_container_width=True)
+
+with col2:
+    st.markdown("### 🔍 Traces")
+    st.markdown("*OpenTelemetry traces will be available in a future update.*")
+    st.button("Download Traces", disabled=True, use_container_width=True)
+
+# Preview Section
+st.header("4. Export Preview")
+
+preview_type = st.selectbox(
+    "Select export type to preview:",
+    ["CSV Results", "JSON Results", "Summary Report", "Configuration"],
+)
+
+with st.expander("Preview", expanded=True):
+    if preview_type == "CSV Results":
+        # Show first few rows of CSV
+        csv_preview = results_to_csv(results).split('\n')[:10]
+        st.text('\n'.join(csv_preview) + "\n...")
+    
+    elif preview_type == "JSON Results":
+        # Show truncated JSON
+        json_obj = json.loads(results_to_json(results))
+        json_obj["items"] = json_obj["items"][:2]  # Show only first 2 items
+        st.json(json_obj)
+    
+    elif preview_type == "Summary Report":
+        # Show first part of summary
+        summary_lines = generate_summary_report(results).split('\n')[:30]
+        st.markdown('\n'.join(summary_lines) + "\n\n*... (truncated)*")
+    
+    else:  # Configuration
+        st.json(config_export)
+
+# Usage Tips
+st.header("5. Export Tips")
+
+st.info("""
+**💡 Tips for using exported data:**
+
+- **CSV Format**: Best for importing into Excel, Google Sheets, or data analysis tools like pandas
+- **JSON Format**: Ideal for programmatic processing or archiving complete evaluation runs
+- **Summary Report**: Great for sharing results with stakeholders or including in documentation
+- **Configuration Export**: Useful for reproducing evaluation runs or debugging issues
+
+**📊 For advanced analysis**, consider using the JSON export with a Jupyter notebook to create custom visualizations and deeper insights.
+""")
+
+# Footer
+st.markdown("---")
+st.markdown(
+    f"*Results generated on {datetime.now().strftime('%Y-%m-%d at %H:%M:%S')}*"
+)
+
+
+
+================================================
+FILE: core/__init__.py
+================================================
+"""
+Core module for AI Evaluation Workbench.
+Contains business logic for data processing, evaluation, and scoring.
+"""
+
+from core.data_models import (
+    EvaluationItem,
+    ScorerResult,
+    EvaluationResults,
+    EvaluationMode,
+)
+from core.evaluation import run_evaluation
+from core.generation import generate_outputs
+from core.ingestion import load_evaluation_data
+from core.reporting import results_to_csv, results_to_json
+
+__all__ = [
+    "EvaluationItem",
+    "ScorerResult",
+    "EvaluationResults",
+    "EvaluationMode",
+    "run_evaluation",
+    "generate_outputs",
+    "load_evaluation_data",
+    "results_to_csv",
+    "results_to_json",
+]
+
+
+
+
+================================================
+FILE: core/data_models.py
+================================================
+"""
+Pydantic models for structured data exchange throughout the application.
+These models serve as the contract between all modules.
+"""
+from pydantic import BaseModel, Field, validator
+from typing import Optional, Dict, Any, List
+from datetime import datetime
+from enum import Enum
+
+
+class EvaluationMode(str, Enum):
+    """Evaluation modes supported by the system."""
+    EVALUATE_EXISTING = "evaluate_existing"
+    GENERATE_THEN_EVALUATE = "generate_then_evaluate"
+
+
+class EvaluationItem(BaseModel):
+    """Represents a single item to be evaluated."""
+    id: Optional[str] = None
+    input: str = Field(..., description="The input/prompt given to the model")
+    output: Optional[str] = Field(None, description="The model's actual output")
+    expected_output: str = Field(..., description="The ideal/correct output")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+    scores: List["ScorerResult"] = Field(default_factory=list, description="Scoring results")
+    
+    @validator("input", "expected_output")
+    def non_empty_strings(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Input and expected_output cannot be empty")
+        return v.strip()
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
+
+
+class ScorerResult(BaseModel):
+    """Result from a single scorer for an evaluation item."""
+    scorer_name: str = Field(..., description="Name of the scorer")
+    score: float = Field(..., ge=0.0, le=1.0, description="Normalized score (0-1)")
+    passed: bool = Field(..., description="Whether the item passed this scorer's criteria")
+    reasoning: Optional[str] = Field(None, description="Explanation for the score")
+    details: Optional[Dict[str, Any]] = Field(None, description="Additional scorer-specific details")
+    error: Optional[str] = Field(None, description="Error message if scoring failed")
+    
+    @validator("score")
+    def validate_score(cls, v):
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("Score must be between 0.0 and 1.0")
+        return round(v, 4)  # Round to 4 decimal places
+
+
+class LLMConfig(BaseModel):
+    """Configuration for an LLM client."""
+    provider: str = Field(..., description="LLM provider (openai, anthropic, google)")
+    model: str = Field(..., description="Model name")
+    temperature: float = Field(0.7, ge=0.0, le=2.0, description="Temperature parameter")
+    max_tokens: int = Field(1000, gt=0, description="Maximum tokens to generate")
+    system_prompt: Optional[str] = Field(None, description="System prompt for the model")
+    api_key: Optional[str] = Field(None, description="API key (if not using environment)")
+    
+    class Config:
+        # Don't include api_key in serialization by default
+        fields = {
+            "api_key": {"exclude": True}
+        }
+
+
+class ScorerConfig(BaseModel):
+    """Configuration for a scorer."""
+    name: str = Field(..., description="Scorer name")
+    enabled: bool = Field(True, description="Whether this scorer is enabled")
+    config: Dict[str, Any] = Field(default_factory=dict, description="Scorer-specific configuration")
+
+
+class EvaluationConfig(BaseModel):
+    """Configuration for an evaluation run."""
+    mode: EvaluationMode
+    scorers: List[ScorerConfig]
+    actor_config: Optional[LLMConfig] = None  # For generate mode
+    timestamp: datetime = Field(default_factory=datetime.now)
+    
+    class Config:
+        use_enum_values = True
+
+
+class EvaluationResults(BaseModel):
+    """Complete results from an evaluation run."""
+    items: List[EvaluationItem] = Field(..., description="Evaluated items with scores")
+    config: Dict[str, Any] = Field(..., description="Configuration used for this run")
+    summary_stats: Dict[str, Dict[str, Any]] = Field(
+        default_factory=dict,
+        description="Summary statistics per scorer"
+    )
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional metadata about the run"
+    )
+    
+    def calculate_summary_stats(self) -> None:
+        """Calculate summary statistics for all scorers."""
+        # Initialize stats dict
+        scorer_stats = {}
+        
+        # Gather scores by scorer
+        for item in self.items:
+            for score in item.scores:
+                if score.scorer_name not in scorer_stats:
+                    scorer_stats[score.scorer_name] = {
+                        "scores": [],
+                        "passed": 0,
+                        "failed": 0,
+                        "errors": 0,
+                    }
+                
+                if score.error:
+                    scorer_stats[score.scorer_name]["errors"] += 1
+                elif score.passed:
+                    scorer_stats[score.scorer_name]["passed"] += 1
+                else:
+                    scorer_stats[score.scorer_name]["failed"] += 1
+                
+                scorer_stats[score.scorer_name]["scores"].append(score.score)
+        
+        # Calculate final statistics
+        for scorer_name, stats in scorer_stats.items():
+            total = stats["passed"] + stats["failed"] + stats["errors"]
+            scores = stats["scores"]
+            
+            self.summary_stats[scorer_name] = {
+                "total": total,
+                "passed": stats["passed"],
+                "failed": stats["failed"],
+                "errors": stats["errors"],
+                "accuracy": stats["passed"] / total if total > 0 else 0,
+                "average_score": sum(scores) / len(scores) if scores else 0,
+                "min_score": min(scores) if scores else 0,
+                "max_score": max(scores) if scores else 0,
+            }
+            
+            # Add score distribution for certain scorers
+            if scorer_name in ["fuzzy_match", "llm_judge"] and scores:
+                import numpy as np
+                bins = [0, 0.2, 0.4, 0.6, 0.8, 1.0]
+                hist, _ = np.histogram(scores, bins=bins)
+                self.summary_stats[scorer_name]["score_distribution"] = {
+                    f"{bins[i]:.1f}-{bins[i+1]:.1f}": int(hist[i])
+                    for i in range(len(hist))
+                }
+
+
+class RunMetadata(BaseModel):
+    """Metadata for an evaluation run."""
+    run_id: str = Field(default_factory=lambda: datetime.now().strftime("%Y%m%d_%H%M%S"))
+    timestamp: datetime = Field(default_factory=datetime.now)
+    duration_seconds: Optional[float] = None
+    total_items: int = 0
+    mode: EvaluationMode
+    user_notes: Optional[str] = None
+    
+    class Config:
+        use_enum_values = True
+
+
+# Update forward references
+EvaluationItem.model_rebuild()
+
+
+
+================================================
+FILE: core/evaluation.py
+================================================
+"""
+Main evaluation orchestrator that coordinates the evaluation process.
+"""
+import asyncio
+import logging
+from typing import List, Dict, Any, Callable, Optional
+from datetime import datetime
+
+from core.data_models import (
+    EvaluationItem,
+    EvaluationResults,
+    ScorerConfig,
+    RunMetadata,
+)
+from core.scoring import create_scorer, get_available_scorers
+
+logger = logging.getLogger(__name__)
+
+
+async def run_evaluation(
+    items: List[EvaluationItem],
+    selected_scorers: List[str],
+    scorer_configs: Dict[str, Dict[str, Any]],
+    api_keys: Dict[str, str],
+    progress_callback: Optional[Callable[[int, int], None]] = None,
+) -> EvaluationResults:
+    """
+    Run evaluation on a list of items using selected scorers.
+    
+    Args:
+        items: List of evaluation items
+        selected_scorers: Names of scorers to use
+        scorer_configs: Configuration for each scorer
+        api_keys: API keys for LLM providers
+        progress_callback: Optional callback for progress updates
+    
+    Returns:
+        EvaluationResults object containing all results and statistics
+    """
+    start_time = datetime.now()
+    logger.info(f"Starting evaluation with {len(items)} items and {len(selected_scorers)} scorers")
+    
+    # Create scorer instances
+    scorers = {}
+    for scorer_name in selected_scorers:
+        config = scorer_configs.get(scorer_name, {})
+        # Add API keys to config if needed
+        if scorer_name == "llm_judge" and "api_key" not in config:
+            provider = config.get("provider", "openai")
+            config["api_key"] = api_keys.get(provider)
+        
+        try:
+            scorer = create_scorer(scorer_name, config)
+            scorers[scorer_name] = scorer
+            logger.info(f"Created scorer: {scorer_name}")
+        except Exception as e:
+            logger.error(f"Failed to create scorer {scorer_name}: {e}")
+            raise
+    
+    # Process each item
+    total_operations = len(items) * len(scorers)
+    completed_operations = 0
+    
+    for item_idx, item in enumerate(items):
+        # Clear existing scores
+        item.scores = []
+        
+        # Apply each scorer
+        for scorer_name, scorer in scorers.items():
+            try:
+                # Run scorer
+                if asyncio.iscoroutinefunction(scorer.score):
+                    result = await scorer.score(item)
+                else:
+                    result = scorer.score(item)
+                
+                item.scores.append(result)
+                logger.debug(f"Scored item {item_idx} with {scorer_name}: {result.score}")
+                
+            except Exception as e:
+                logger.error(f"Error scoring item {item_idx} with {scorer_name}: {e}")
+                # Add error result
+                from core.data_models import ScorerResult
+                item.scores.append(
+                    ScorerResult(
+                        scorer_name=scorer_name,
+                        score=0.0,
+                        passed=False,
+                        error=str(e),
+                    )
+                )
+            
+            # Update progress
+            completed_operations += 1
+            if progress_callback:
+                progress_callback(completed_operations, total_operations)
+    
+    # Create results object
+    end_time = datetime.now()
+    duration = (end_time - start_time).total_seconds()
+    
+    results = EvaluationResults(
+        items=items,
+        config={
+            "scorers": selected_scorers,
+            "scorer_configs": scorer_configs,
+            "timestamp": start_time.isoformat(),
+            "duration_seconds": duration,
+        },
+        metadata={
+            "mode": "evaluate_existing",  # Will be updated by caller if different
+            "timestamp": start_time.isoformat(),
+            "duration_seconds": duration,
+            "total_items": len(items),
+            "total_scorers": len(scorers),
+        },
+    )
+    
+    # Calculate summary statistics
+    results.calculate_summary_stats()
+    
+    logger.info(f"Evaluation completed in {duration:.2f} seconds")
+    return results
+
+
+async def run_evaluation_batch(
+    items: List[EvaluationItem],
+    selected_scorers: List[str],
+    scorer_configs: Dict[str, Dict[str, Any]],
+    api_keys: Dict[str, str],
+    batch_size: int = 10,
+    progress_callback: Optional[Callable[[int, int], None]] = None,
+) -> EvaluationResults:
+    """
+    Run evaluation in batches for better performance with async scorers.
+    
+    This is an optimized version that processes items in batches,
+    particularly useful for LLM-based scorers.
+    """
+    start_time = datetime.now()
+    logger.info(f"Starting batch evaluation with {len(items)} items, batch size {batch_size}")
+    
+    # Create scorer instances
+    scorers = {}
+    for scorer_name in selected_scorers:
+        config = scorer_configs.get(scorer_name, {})
+        if scorer_name == "llm_judge" and "api_key" not in config:
+            provider = config.get("provider", "openai")
+            config["api_key"] = api_keys.get(provider)
+        
+        scorers[scorer_name] = create_scorer(scorer_name, config)
+    
+    # Process in batches
+    total_operations = len(items) * len(scorers)
+    completed_operations = 0
+    
+    for i in range(0, len(items), batch_size):
+        batch = items[i:i + batch_size]
+        
+        # Create tasks for this batch
+        tasks = []
+        for item in batch:
+            item.scores = []
+            for scorer_name, scorer in scorers.items():
+                if asyncio.iscoroutinefunction(scorer.score):
+                    task = scorer.score(item)
+                else:
+                    # Wrap sync function in coroutine
+                    task = asyncio.create_task(
+                        asyncio.to_thread(scorer.score, item)
+                    )
+                tasks.append((item, scorer_name, task))
+        
+        # Wait for batch to complete
+        for item, scorer_name, task in tasks:
+            try:
+                result = await task
+                item.scores.append(result)
+            except Exception as e:
+                logger.error(f"Error in batch scoring: {e}")
+                from core.data_models import ScorerResult
+                item.scores.append(
+                    ScorerResult(
+                        scorer_name=scorer_name,
+                        score=0.0,
+                        passed=False,
+                        error=str(e),
+                    )
+                )
+            
+            completed_operations += 1
+            if progress_callback:
+                progress_callback(completed_operations, total_operations)
+    
+    # Create results
+    end_time = datetime.now()
+    duration = (end_time - start_time).total_seconds()
+    
+    results = EvaluationResults(
+        items=items,
+        config={
+            "scorers": selected_scorers,
+            "scorer_configs": scorer_configs,
+            "timestamp": start_time.isoformat(),
+            "duration_seconds": duration,
+            "batch_size": batch_size,
+        },
+        metadata={
+            "mode": "evaluate_existing",
+            "timestamp": start_time.isoformat(),
+            "duration_seconds": duration,
+            "total_items": len(items),
+            "total_scorers": len(scorers),
+            "batch_size": batch_size,
+        },
+    )
+    
+    results.calculate_summary_stats()
+    
+    logger.info(f"Batch evaluation completed in {duration:.2f} seconds")
+    return results
+
+
+
+================================================
+FILE: core/generation.py
+================================================
+"""
+Logic for generating outputs from an Actor LLM (Mode B).
+"""
+import asyncio
+import logging
+from typing import List, Dict, Any, Callable, Optional
+from datetime import datetime
+
+from core.data_models import EvaluationItem, LLMConfig
+from services.llm_clients import create_llm_client
+
+logger = logging.getLogger(__name__)
+
+
+async def generate_outputs(
+    items: List[EvaluationItem],
+    actor_config: Dict[str, Any],
+    progress_callback: Optional[Callable[[int, int], None]] = None,
+    batch_size: int = 5,
+) -> List[EvaluationItem]:
+    """
+    Generate outputs for evaluation items using an Actor LLM.
+    
+    Args:
+        items: List of evaluation items (with input and expected_output)
+        actor_config: Configuration for the Actor LLM
+        progress_callback: Optional callback for progress updates
+        batch_size: Number of items to process concurrently
+    
+    Returns:
+        List of evaluation items with generated outputs
+    """
+    start_time = datetime.now()
+    logger.info(f"Starting output generation for {len(items)} items")
+    
+    # Create LLM client
+    client = create_llm_client(
+        provider=actor_config["provider"],
+        api_key=actor_config.get("api_key"),
+    )
+    
+    # Prepare generation parameters
+    gen_params = {
+        "model": actor_config["model"],
+        "temperature": actor_config.get("temperature", 0.7),
+        "max_tokens": actor_config.get("max_tokens", 1000),
+    }
+    
+    system_prompt = actor_config.get("system_prompt")
+    
+    # Process items in batches
+    total_items = len(items)
+    completed_items = 0
+    
+    for i in range(0, len(items), batch_size):
+        batch = items[i:i + batch_size]
+        tasks = []
+        
+        for item in batch:
+            # Prepare the prompt
+            if system_prompt:
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": item.input},
+                ]
+            else:
+                messages = [{"role": "user", "content": item.input}]
+            
+            # Create generation task
+            task = client.generate(messages, **gen_params)
+            tasks.append((item, task))
+        
+        # Wait for batch to complete
+        for item, task in tasks:
+            try:
+                output = await task
+                item.output = output
+                logger.debug(f"Generated output for item {item.id or 'unknown'}")
+            except Exception as e:
+                logger.error(f"Error generating output for item {item.id or 'unknown'}: {e}")
+                item.output = f"[ERROR: Failed to generate output - {str(e)}]"
+            
+            completed_items += 1
+            if progress_callback:
+                progress_callback(completed_items, total_items)
+    
+    end_time = datetime.now()
+    duration = (end_time - start_time).total_seconds()
+    
+    logger.info(f"Output generation completed in {duration:.2f} seconds")
+    return items
+
+
+async def generate_single_output(
+    input_text: str,
+    actor_config: Dict[str, Any],
+) -> str:
+    """
+    Generate a single output for testing or one-off generation.
+    
+    Args:
+        input_text: The input prompt
+        actor_config: Configuration for the Actor LLM
+    
+    Returns:
+        Generated output text
+    """
+    client = create_llm_client(
+        provider=actor_config["provider"],
+        api_key=actor_config.get("api_key"),
+    )
+    
+    gen_params = {
+        "model": actor_config["model"],
+        "temperature": actor_config.get("temperature", 0.7),
+        "max_tokens": actor_config.get("max_tokens", 1000),
+    }
+    
+    system_prompt = actor_config.get("system_prompt")
+    
+    if system_prompt:
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": input_text},
+        ]
+    else:
+        messages = [{"role": "user", "content": input_text}]
+    
+    try:
+        output = await client.generate(messages, **gen_params)
+        return output
+    except Exception as e:
+        logger.error(f"Error generating output: {e}")
+        raise
+
+
+def validate_generation_config(config: Dict[str, Any]) -> bool:
+    """
+    Validate that a generation configuration has all required fields.
+    
+    Args:
+        config: Configuration dictionary
+    
+    Returns:
+        True if valid, raises ValueError if not
+    """
+    required_fields = ["provider", "model"]
+    
+    for field in required_fields:
+        if field not in config:
+            raise ValueError(f"Missing required field in generation config: {field}")
+    
+    # Validate provider
+    valid_providers = ["openai", "anthropic", "google"]
+    if config["provider"] not in valid_providers:
+        raise ValueError(f"Invalid provider: {config['provider']}. Must be one of {valid_providers}")
+    
+    # Validate model based on provider
+    provider_models = {
+        "openai": ["gpt-4", "gpt-4-turbo-preview", "gpt-3.5-turbo"],
+        "anthropic": ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"],
+        "google": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro"],
+    }
+    
+    valid_models = provider_models.get(config["provider"], [])
+    if config["model"] not in valid_models:
+        logger.warning(f"Model {config['model']} not in known models for {config['provider']}")
+    
+    return True
+
+
+
+
+================================================
+FILE: core/ingestion.py
+================================================
+"""
+Data ingestion and validation utilities.
+"""
+import pandas as pd
+import logging
+from typing import List, Tuple, Union
+from pathlib import Path
+import json
+
+from core.data_models import EvaluationItem, EvaluationMode
+
+logger = logging.getLogger(__name__)
+
+
+def validate_csv_columns(
+    df: pd.DataFrame,
+    required_columns: List[str],
+) -> Tuple[bool, str]:
+    """
+    Validate that a DataFrame has the required columns.
+    
+    Args:
+        df: DataFrame to validate
+        required_columns: List of required column names
+    
+    Returns:
+        Tuple of (is_valid, message)
+    """
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    
+    if missing_columns:
+        return False, f"Missing required columns: {', '.join(missing_columns)}"
+    
+    # Check for empty required columns
+    for col in required_columns:
+        if df[col].isna().all():
+            return False, f"Column '{col}' is empty"
+    
+    return True, "All required columns present and valid"
+
+
+def load_evaluation_data(
+    data: Union[pd.DataFrame, str, Path],
+    mode: EvaluationMode = EvaluationMode.EVALUATE_EXISTING,
+) -> List[EvaluationItem]:
+    """
+    Load evaluation data from various sources.
+    
+    Args:
+        data: DataFrame, file path, or JSON string
+        mode: Evaluation mode to determine required columns
+    
+    Returns:
+        List of EvaluationItem objects
+    """
+    # Convert to DataFrame if needed
+    if isinstance(data, (str, Path)):
+        path = Path(data)
+        if path.exists() and path.suffix == ".csv":
+            df = pd.read_csv(path)
+        elif path.exists() and path.suffix == ".json":
+            with open(path) as f:
+                json_data = json.load(f)
+            df = pd.DataFrame(json_data)
+        else:
+            # Try to parse as JSON string
+            try:
+                json_data = json.loads(data)
+                df = pd.DataFrame(json_data)
+            except:
+                raise ValueError(f"Unable to load data from: {data}")
+    else:
+        df = data
+    
+    # Validate columns based on mode
+    required_columns = ["input", "expected_output"]
+    if mode == EvaluationMode.EVALUATE_EXISTING:
+        required_columns.append("output")
+    
+    is_valid, message = validate_csv_columns(df, required_columns)
+    if not is_valid:
+        raise ValueError(message)
+    
+    # Convert to EvaluationItem objects
+    items = []
+    for idx, row in df.iterrows():
+        # Handle metadata columns
+        metadata = {}
+        for col in df.columns:
+            if col not in ["id", "input", "output", "expected_output"]:
+                value = row[col]
+                # Convert numpy/pandas types to Python types
+                if pd.notna(value):
+                    if isinstance(value, (pd.Timestamp, pd.DatetimeTZDtype)):
+                        metadata[col] = value.isoformat()
+                    else:
+                        metadata[col] = value
+        
+        item = EvaluationItem(
+            id=str(row.get("id", idx + 1)),
+            input=str(row["input"]),
+            output=str(row.get("output", "")) if mode == EvaluationMode.EVALUATE_EXISTING else None,
+            expected_output=str(row["expected_output"]),
+            metadata=metadata,
+        )
+        items.append(item)
+    
+    logger.info(f"Loaded {len(items)} evaluation items")
+    return items
+
+
+def save_evaluation_data(
+    items: List[EvaluationItem],
+    output_path: Union[str, Path],
+    format: str = "csv",
+) -> None:
+    """
+    Save evaluation items to a file.
+    
+    Args:
+        items: List of evaluation items
+        output_path: Path to save the file
+        format: Output format ('csv' or 'json')
+    """
+    output_path = Path(output_path)
+    
+    if format == "csv":
+        # Convert to DataFrame
+        data = []
+        for item in items:
+            row = {
+                "id": item.id,
+                "input": item.input,
+                "output": item.output,
+                "expected_output": item.expected_output,
+            }
+            # Add metadata columns
+            row.update(item.metadata)
+            data.append(row)
+        
+        df = pd.DataFrame(data)
+        df.to_csv(output_path, index=False)
+        
+    elif format == "json":
+        # Convert to JSON
+        data = [item.model_dump() for item in items]
+        with open(output_path, "w") as f:
+            json.dump(data, f, indent=2)
+    
+    else:
+        raise ValueError(f"Unsupported format: {format}")
+    
+    logger.info(f"Saved {len(items)} items to {output_path}")
+
+
+def create_sample_data(
+    num_items: int = 10,
+    include_output: bool = True,
+) -> pd.DataFrame:
+    """
+    Create sample evaluation data for testing.
+    
+    Args:
+        num_items: Number of sample items to create
+        include_output: Whether to include output column
+    
+    Returns:
+        DataFrame with sample data
+    """
+    import random
+    
+    sample_prompts = [
+        "What is the capital of France?",
+        "Explain photosynthesis in simple terms.",
+        "Write a haiku about programming.",
+        "What are the primary colors?",
+        "How do you make a peanut butter sandwich?",
+        "What is 2 + 2?",
+        "Translate 'hello' to Spanish.",
+        "What is the largest planet in our solar system?",
+        "Define artificial intelligence.",
+        "What year did World War II end?",
+    ]
+    
+    sample_outputs = [
+        "The capital of France is Paris.",
+        "Photosynthesis is how plants make food using sunlight, water, and carbon dioxide.",
+        "Code flows like water\nBugs hide in the shadows deep\nDebugger finds all",
+        "The primary colors are red, blue, and yellow (in traditional color theory).",
+        "Spread peanut butter on one slice of bread, optionally add jam, then place another slice on top.",
+        "2 + 2 equals 4.",
+        "'Hello' in Spanish is 'Hola'.",
+        "Jupiter is the largest planet in our solar system.",
+        "AI is the simulation of human intelligence by machines, especially computer systems.",
+        "World War II ended in 1945.",
+    ]
+    
+    data = []
+    for i in range(min(num_items, len(sample_prompts))):
+        row = {
+            "id": f"sample_{i+1}",
+            "input": sample_prompts[i],
+            "expected_output": sample_outputs[i],
+        }
+        
+        if include_output:
+            # Add some variation to outputs
+            if random.random() > 0.7:
+                # Introduce some errors
+                row["output"] = sample_outputs[i].replace(".", "!")
+            else:
+                row["output"] = sample_outputs[i]
+        
+        data.append(row)
+    
+    # If we need more items, duplicate with variations
+    while len(data) < num_items:
+        base_item = random.choice(data[:len(sample_prompts)])
+        new_item = base_item.copy()
+        new_item["id"] = f"sample_{len(data)+1}"
+        data.append(new_item)
+    
+    return pd.DataFrame(data)
+
+
+
+
+================================================
+FILE: core/logging_config.py
+================================================
+"""
+Logging configuration for the application.
+"""
+import logging
+import sys
+from pathlib import Path
+from datetime import datetime
+import os
+
+
+def setup_logging(
+    log_level: str = None,
+    log_file: str = None,
+    log_to_console: bool = True,
+) -> None:
+    """
+    Set up logging configuration for the application.
+    
+    Args:
+        log_level: Logging level (DEBUG, INFO, WARNING, ERROR)
+        log_file: Optional log file path
+        log_to_console: Whether to log to console
+    """
+    # Get log level from environment or parameter
+    if log_level is None:
+        log_level = os.getenv("LOG_LEVEL", "INFO")
+    
+    # Convert string to logging level
+    numeric_level = getattr(logging, log_level.upper(), None)
+    if not isinstance(numeric_level, int):
+        numeric_level = logging.INFO
+    
+    # Create logs directory if needed
+    if log_file:
+        log_dir = Path(log_file).parent
+        log_dir.mkdir(exist_ok=True)
+    
+    # Configure logging format
+    log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    date_format = "%Y-%m-%d %H:%M:%S"
+    
+    # Configure handlers
+    handlers = []
+    
+    if log_to_console:
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(logging.Formatter(log_format, date_format))
+        handlers.append(console_handler)
+    
+    if log_file:
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(logging.Formatter(log_format, date_format))
+        handlers.append(file_handler)
+    
+    # Configure root logger
+    logging.basicConfig(
+        level=numeric_level,
+        format=log_format,
+        datefmt=date_format,
+        handlers=handlers,
+        force=True,  # Override any existing configuration
+    )
+    
+    # Configure specific loggers
+    # Reduce noise from HTTP libraries
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("openai").setLevel(logging.WARNING)
+    logging.getLogger("anthropic").setLevel(logging.WARNING)
+    
+    # Log startup message
+    logger = logging.getLogger(__name__)
+    logger.info(f"Logging initialized at {log_level} level")
+    if log_file:
+        logger.info(f"Logging to file: {log_file}")
+
+
+def get_logger(name: str) -> logging.Logger:
+    """
+    Get a logger instance with the given name.
+    
+    Args:
+        name: Logger name (typically __name__)
+    
+    Returns:
+        Logger instance
+    """
+    return logging.getLogger(name)
+
+
+class LogContext:
+    """Context manager for temporary log level changes."""
+    
+    def __init__(self, logger: logging.Logger, level: int):
+        self.logger = logger
+        self.new_level = level
+        self.old_level = logger.level
+    
+    def __enter__(self):
+        self.logger.setLevel(self.new_level)
+        return self.logger
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.logger.setLevel(self.old_level)
+
+
+def log_function_call(func):
+    """Decorator to log function calls and results."""
+    import functools
+    
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        logger = logging.getLogger(func.__module__)
+        logger.debug(f"Calling {func.__name__} with args={args}, kwargs={kwargs}")
+        
+        try:
+            result = func(*args, **kwargs)
+            logger.debug(f"{func.__name__} returned: {result}")
+            return result
+        except Exception as e:
+            logger.error(f"{func.__name__} raised exception: {e}")
+            raise
+    
+    return wrapper
+
+
+def create_run_logger(run_id: str) -> logging.Logger:
+    """
+    Create a logger specific to an evaluation run.
+    
+    Args:
+        run_id: Unique identifier for the run
+    
+    Returns:
+        Logger instance for the run
+    """
+    # Create a dedicated logger for this run
+    logger_name = f"eval_run.{run_id}"
+    logger = logging.getLogger(logger_name)
+    
+    # Add a file handler specific to this run
+    log_dir = Path("logs/runs")
+    log_dir.mkdir(parents=True, exist_ok=True)
+    
+    log_file = log_dir / f"{run_id}.log"
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s - %(levelname)s - %(message)s",
+            "%Y-%m-%d %H:%M:%S"
+        )
+    )
+    
+    logger.addHandler(file_handler)
+    logger.setLevel(logging.DEBUG)
+    
+    logger.info(f"Started evaluation run: {run_id}")
+    
+    return logger
+
+
+
+================================================
+FILE: core/reporting.py
+================================================
+"""
+Reporting utilities for converting evaluation results to various formats.
+"""
+import json
+import pandas as pd
+import csv
+import io
+from typing import Dict, Any, List, Set
+from datetime import datetime
+import numpy as np
+
+from core.data_models import EvaluationResults, EvaluationItem
+
+
+def results_to_csv(results: EvaluationResults) -> str:
+    """
+    Convert evaluation results to CSV format.
+    
+    Args:
+        results: Evaluation results object
+    
+    Returns:
+        CSV string
+    """
+    if not results.items:
+        return ""
+    
+    # Collect all metadata keys and scorer names
+    metadata_keys: Set[str] = set()
+    scorer_names: Set[str] = set()
+    
+    for item in results.items:
+        metadata_keys.update(item.metadata.keys())
+        for score in item.scores:
+            scorer_names.add(score.scorer_name)
+    
+    # Build fieldnames
+    fieldnames = ["id", "input", "output", "expected_output"]
+    
+    # Add metadata columns
+    for key in sorted(metadata_keys):
+        fieldnames.append(f"metadata_{key}")
+    
+    # Add scorer fields
+    for scorer in sorted(scorer_names):
+        fieldnames.extend([
+            f"{scorer}_score",
+            f"{scorer}_passed",
+            f"{scorer}_reasoning",
+            f"{scorer}_error"
+        ])
+    
+    # Write CSV
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+    
+    for item in results.items:
+        row = {
+            "id": item.id or "",
+            "input": item.input,
+            "output": item.output or "",
+            "expected_output": item.expected_output,
+        }
+        
+        # Add metadata
+        for key in metadata_keys:
+            row[f"metadata_{key}"] = item.metadata.get(key, "")
+        
+        # Add scores
+        for score in item.scores:
+            row[f"{score.scorer_name}_score"] = score.score
+            row[f"{score.scorer_name}_passed"] = score.passed
+            row[f"{score.scorer_name}_reasoning"] = score.reasoning or ""
+            if score.error:
+                row[f"{score.scorer_name}_error"] = score.error
+        
+        writer.writerow(row)
+    
+    return output.getvalue()
+
+
+def results_to_json(results: EvaluationResults) -> str:
+    """
+    Convert evaluation results to JSON format.
+    
+    Args:
+        results: Evaluation results object
+    
+    Returns:
+        JSON string
+    """
+    return results.model_dump_json(indent=2)
+
+
+def generate_summary_report(results: EvaluationResults) -> str:
+    """
+    Generate a human-readable summary report in Markdown format.
+    
+    Args:
+        results: Evaluation results object
+    
+    Returns:
+        Markdown-formatted report string
+    """
+    if not results.items:
+        return "# Evaluation Summary Report\n\nNo evaluation results to summarize."
+
+    report_lines = []
+    
+    # Header
+    report_lines.append("# Evaluation Summary Report")
+    report_lines.append("")
+    report_lines.append(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    report_lines.append("")
+    
+    # Overview
+    report_lines.append("## Overview")
+    report_lines.append("")
+    report_lines.append(f"- **Total Items Evaluated**: {len(results.items)}")
+    report_lines.append(f"- **Evaluation Mode**: {results.metadata.get('mode', 'Unknown')}")
+    report_lines.append(f"- **Duration**: {results.metadata.get('duration_seconds', 0):.2f} seconds")
+    report_lines.append(f"- **Scorers Used**: {', '.join(results.summary_stats.keys())}")
+    report_lines.append("")
+    
+    # Summary Statistics
+    report_lines.append("## Summary Statistics")
+    report_lines.append("")
+    
+    for scorer_name, stats in results.summary_stats.items():
+        report_lines.append(f"### {scorer_name.replace('_', ' ').title()}")
+        report_lines.append("")
+        report_lines.append(f"- **Accuracy**: {stats.get('accuracy', 0):.1%}")
+        report_lines.append(f"- **Items Passed**: {stats.get('passed', 0)}/{stats.get('total', 0)}")
+        report_lines.append(f"- **Items Failed**: {stats.get('failed', 0)}/{stats.get('total', 0)}")
+        
+        if stats.get('errors', 0) > 0:
+            report_lines.append(f"- **Errors**: {stats.get('errors', 0)}")
+        
+        report_lines.append(f"- **Average Score**: {stats.get('average_score', 0):.3f}")
+        report_lines.append(f"- **Score Range**: {stats.get('min_score', 0):.3f} - {stats.get('max_score', 0):.3f}")
+        
+        # Score distribution if available
+        if 'score_distribution' in stats:
+            report_lines.append("")
+            report_lines.append("**Score Distribution:**")
+            for range_label, count in stats['score_distribution'].items():
+                report_lines.append(f"  - {range_label}: {count} items")
+        
+        report_lines.append("")
+    
+    # Failure Analysis
+    report_lines.append("## Failure Analysis")
+    report_lines.append("")
+    
+    # Collect failures by scorer
+    failures_by_scorer = {}
+    for item in results.items:
+        for score in item.scores:
+            if not score.passed and not score.error:
+                if score.scorer_name not in failures_by_scorer:
+                    failures_by_scorer[score.scorer_name] = []
+                failures_by_scorer[score.scorer_name].append({
+                    "id": item.id,
+                    "score": score.score,
+                    "reasoning": score.reasoning,
+                })
+    
+    if failures_by_scorer:
+        for scorer_name, failures in failures_by_scorer.items():
+            report_lines.append(f"### {scorer_name.replace('_', ' ').title()} Failures")
+            report_lines.append("")
+            report_lines.append(f"Total failures: {len(failures)}")
+            report_lines.append("")
+            
+            # Show top 5 failures
+            for failure in failures[:5]:
+                report_lines.append(f"- **Item {failure['id']}** (Score: {failure['score']:.3f})")
+                if failure['reasoning']:
+                    report_lines.append(f"  - Reason: {failure['reasoning'][:100]}...")
+            
+            if len(failures) > 5:
+                report_lines.append(f"- ... and {len(failures) - 5} more failures")
+            
+            report_lines.append("")
+    else:
+        report_lines.append("No failures detected across all scorers.")
+        report_lines.append("")
+    
+    # Configuration Used
+    report_lines.append("## Configuration")
+    report_lines.append("")
+    report_lines.append("```json")
+    report_lines.append(json.dumps(results.config, indent=2))
+    report_lines.append("```")
+    report_lines.append("")
+    
+    # Recommendations
+    report_lines.append("## Recommendations")
+    report_lines.append("")
+    
+    # Generate recommendations based on results
+    recommendations = generate_recommendations(results)
+    for rec in recommendations:
+        report_lines.append(f"- {rec}")
+    
+    return "\n".join(report_lines)
+
+
+def generate_recommendations(results: EvaluationResults) -> List[str]:
+    """
+    Generate recommendations based on evaluation results.
+    
+    Args:
+        results: Evaluation results object
+    
+    Returns:
+        List of recommendation strings
+    """
+    recommendations = []
+    
+    # Check overall performance
+    avg_accuracy = sum(
+        stats.get('accuracy', 0) for stats in results.summary_stats.values()
+    ) / len(results.summary_stats) if results.summary_stats else 0
+    
+    if avg_accuracy < 0.5:
+        recommendations.append(
+            "Overall accuracy is below 50%. Consider reviewing the model's training data or prompts."
+        )
+    elif avg_accuracy < 0.8:
+        recommendations.append(
+            "There's room for improvement. Focus on the specific failure cases to identify patterns."
+        )
+    else:
+        recommendations.append(
+            "Good overall performance! Consider adding more challenging test cases."
+        )
+    
+    # Check for scorer-specific issues
+    for scorer_name, stats in results.summary_stats.items():
+        if stats.get('errors', 0) > 0:
+            recommendations.append(
+                f"The {scorer_name} scorer encountered errors. Check API limits or configuration."
+            )
+        
+        if scorer_name == "exact_match" and stats.get('accuracy', 0) < 0.3:
+            recommendations.append(
+                "Low exact match scores. Consider using fuzzy matching for more flexibility."
+            )
+        
+        if scorer_name == "llm_judge" and stats.get('average_score', 0) < 0.5:
+            recommendations.append(
+                "LLM judge scores are low. Review the judge prompt for clarity and criteria."
+            )
+    
+    # Check for consistency across scorers
+    if len(results.summary_stats) > 1:
+        accuracies = [stats.get('accuracy', 0) for stats in results.summary_stats.values()]
+        variance = max(accuracies) - min(accuracies)
+        if variance > 0.3:
+            recommendations.append(
+                "Large variance in scorer results. Ensure all scorers are properly configured and aligned."
+            )
+    
+    return recommendations
+
+
+def export_detailed_analysis(
+    results: EvaluationResults,
+    output_path: str,
+    include_all_items: bool = False,
+) -> None:
+    """
+    Export a detailed analysis to a file.
+    
+    Args:
+        results: Evaluation results object
+        output_path: Path to save the analysis
+        include_all_items: Whether to include all items or just failures
+    """
+    if not results.items:
+        raise ValueError("No evaluation items to export.")
+
+    with open(output_path, 'w') as f:
+        # Write summary
+        f.write(generate_summary_report(results))
+        f.write("\n\n")
+        
+        # Write detailed item analysis
+        f.write("# Detailed Item Analysis\n\n")
+        
+        items_to_analyze = results.items
+        if not include_all_items:
+            # Filter to items with at least one failure
+            items_to_analyze = [
+                item for item in results.items
+                if any(not score.passed for score in item.scores)
+            ]
+        
+        for item in items_to_analyze:
+            f.write(f"## Item: {item.id}\n\n")
+            f.write(f"**Input:**\n```\n{item.input}\n```\n\n")
+            f.write(f"**Expected Output:**\n```\n{item.expected_output}\n```\n\n")
+            f.write(f"**Actual Output:**\n```\n{item.output}\n```\n\n")
+            
+            f.write("**Scores:**\n")
+            for score in item.scores:
+                status = "✅ PASS" if score.passed else "❌ FAIL"
+                f.write(f"- {score.scorer_name}: {status} (Score: {score.score:.3f})\n")
+                if score.reasoning:
+                    f.write(f"  - Reasoning: {score.reasoning}\n")
+                if score.error:
+                    f.write(f"  - Error: {score.error}\n")
+            
+            f.write("\n---\n\n")
+
+
+
+================================================
+FILE: core/scoring/__init__.py
+================================================
+"""Scoring module containing various evaluation scorers."""
+
+from typing import Dict, Any, Type
+
+from core.scoring.base import BaseScorer
+
+
+# Import specific scorers - do this after BaseScorer is defined
+from core.scoring.exact_match import ExactMatchScorer
+from core.scoring.fuzzy_match import FuzzyMatchScorer
+from core.scoring.llm_judge import LLMJudgeScorer
+
+# Try to import optional scorer variants
+try:
+    from core.scoring.exact_match import (
+        CaseInsensitiveExactMatchScorer,
+        NormalizedExactMatchScorer,
+    )
+except ImportError:
+    CaseInsensitiveExactMatchScorer = None
+    NormalizedExactMatchScorer = None
+
+try:
+    from core.scoring.llm_judge import StructuredLLMJudgeScorer
+except ImportError:
+    StructuredLLMJudgeScorer = None
+
+
+# Registry of available scorers
+SCORER_REGISTRY: Dict[str, Type[BaseScorer]] = {
+    "exact_match": ExactMatchScorer,
+    "fuzzy_match": FuzzyMatchScorer,
+    "llm_judge": LLMJudgeScorer,
+}
+
+# Add optional scorers if available
+if CaseInsensitiveExactMatchScorer:
+    SCORER_REGISTRY["case_insensitive_exact_match"] = CaseInsensitiveExactMatchScorer
+if NormalizedExactMatchScorer:
+    SCORER_REGISTRY["normalized_exact_match"] = NormalizedExactMatchScorer
+if StructuredLLMJudgeScorer:
+    SCORER_REGISTRY["structured_llm_judge"] = StructuredLLMJudgeScorer
+
+
+def get_available_scorers() -> Dict[str, Dict[str, Any]]:
+    """Return metadata about each registered scorer.
+
+    The function iterates over :data:`SCORER_REGISTRY`, instantiates each
+    scorer class, and collects human-friendly information. The returned
+    dictionary maps the scorer's registration name to its class object,
+    display name and description.
+
+    Returns:
+        Dict[str, Dict[str, Any]]: Mapping of scorer names to metadata.
+    """
+    scorers_info = {}
+
+    for name, scorer_class in SCORER_REGISTRY.items():
+        scorer = scorer_class()
+        scorers_info[name] = {
+            "class": scorer_class,
+            "display_name": scorer.name,
+            "description": scorer.description,
+        }
+
+    return scorers_info
+
+
+def create_scorer(name: str, config: Dict[str, Any] = None) -> BaseScorer:
+    """
+    Create a scorer instance by name.
+
+    Args:
+        name: Name of the scorer
+        config: Configuration for the scorer
+
+    Returns:
+        Scorer instance
+
+    Raises:
+        ValueError: If scorer name is not found
+    """
+    if name not in SCORER_REGISTRY:
+        raise ValueError(
+            f"Unknown scorer: {name}. Available: {list(SCORER_REGISTRY.keys())}"
+        )
+
+    scorer_class = SCORER_REGISTRY[name]
+    return scorer_class(config)
+
+
+def register_scorer(name: str, scorer_class: Type[BaseScorer]) -> None:
+    """
+    Register a new scorer class.
+
+    Args:
+        name: Name to register the scorer under
+        scorer_class: The scorer class
+    """
+    if not issubclass(scorer_class, BaseScorer):
+        raise TypeError("Scorer class must inherit from BaseScorer")
+
+    SCORER_REGISTRY[name] = scorer_class
+
+
+__all__ = [
+    "BaseScorer",
+    "ExactMatchScorer",
+    "FuzzyMatchScorer",
+    "LLMJudgeScorer",
+    "get_available_scorers",
+    "create_scorer",
+    "register_scorer",
+]
+
+
+
+================================================
+FILE: core/scoring/base.py
+================================================
+"""Base scorer class definition."""
+
+from abc import ABC, abstractmethod
+from typing import Dict, Any
+
+from core.data_models import EvaluationItem, ScorerResult
+
+
+class BaseScorer(ABC):
+    """Abstract base class for all scorers."""
+
+    def __init__(self, config: Dict[str, Any] | None = None) -> None:
+        self.config = config or {}
+
+    @abstractmethod
+    def score(self, item: EvaluationItem) -> ScorerResult:
+        """Score an evaluation item and return the result."""
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """Human friendly name for the scorer."""
+
+    @property
+    def description(self) -> str:
+        return f"{self.name} scorer"
+
+
+
+
+================================================
+FILE: core/scoring/exact_match.py
+================================================
+"""
+Exact match scorer - checks if output exactly matches expected output.
+"""
+from core.scoring.base import BaseScorer
+from core.data_models import EvaluationItem, ScorerResult
+
+
+class ExactMatchScorer(BaseScorer):
+    """
+    Scorer that checks for exact string match between output and expected output.
+    """
+    
+    @property
+    def name(self) -> str:
+        return "Exact Match"
+    
+    @property
+    def description(self) -> str:
+        return "Checks if the output exactly matches the expected output (case-sensitive)"
+    
+    def score(self, item: EvaluationItem) -> ScorerResult:
+        """
+        Score an item based on exact string match.
+        
+        Args:
+            item: The evaluation item to score
+        
+        Returns:
+            ScorerResult with binary score (1.0 for match, 0.0 for no match)
+        """
+        if item.output is None:
+            return ScorerResult(
+                scorer_name="exact_match",
+                score=0.0,
+                passed=False,
+                reasoning="No output provided",
+            )
+        
+        # Check for exact match
+        is_match = item.output.strip() == item.expected_output.strip()
+        
+        return ScorerResult(
+            scorer_name="exact_match",
+            score=1.0 if is_match else 0.0,
+            passed=is_match,
+            reasoning="Exact match found" if is_match else "Output does not exactly match expected",
+            details={
+                "output_length": len(item.output),
+                "expected_length": len(item.expected_output),
+                "stripped_match": item.output.strip() == item.expected_output.strip(),
+            }
+        )
+
+
+class CaseInsensitiveExactMatchScorer(BaseScorer):
+    """
+    Scorer that checks for exact match ignoring case.
+    """
+    
+    @property
+    def name(self) -> str:
+        return "Case-Insensitive Exact Match"
+    
+    @property
+    def description(self) -> str:
+        return "Checks if the output matches expected output ignoring case differences"
+    
+    def score(self, item: EvaluationItem) -> ScorerResult:
+        """
+        Score an item based on case-insensitive exact match.
+        
+        Args:
+            item: The evaluation item to score
+        
+        Returns:
+            ScorerResult with binary score
+        """
+        if item.output is None:
+            return ScorerResult(
+                scorer_name="case_insensitive_exact_match",
+                score=0.0,
+                passed=False,
+                reasoning="No output provided",
+            )
+        
+        # Check for case-insensitive match
+        is_match = item.output.strip().lower() == item.expected_output.strip().lower()
+        
+        return ScorerResult(
+            scorer_name="case_insensitive_exact_match",
+            score=1.0 if is_match else 0.0,
+            passed=is_match,
+            reasoning="Case-insensitive match found" if is_match else "Output does not match (case-insensitive)",
+            details={
+                "case_sensitive_match": item.output.strip() == item.expected_output.strip(),
+                "case_insensitive_match": is_match,
+            }
+        )
+
+
+class NormalizedExactMatchScorer(BaseScorer):
+    """
+    Scorer that normalizes text before checking for exact match.
+    Normalization includes: lowercasing, removing extra whitespace, punctuation normalization.
+    """
+    
+    @property
+    def name(self) -> str:
+        return "Normalized Exact Match"
+    
+    @property
+    def description(self) -> str:
+        return "Checks for match after normalizing whitespace, case, and punctuation"
+    
+    def normalize_text(self, text: str) -> str:
+        """
+        Normalize text for comparison.
+        
+        Args:
+            text: Text to normalize
+        
+        Returns:
+            Normalized text
+        """
+        import re
+        
+        # Convert to lowercase
+        text = text.lower()
+        
+        # Replace multiple whitespace with single space
+        text = re.sub(r'\s+', ' ', text)
+        
+        # Remove leading/trailing whitespace
+        text = text.strip()
+        
+        # Normalize common punctuation
+        # Replace smart quotes/apostrophes with straight ones
+        text = (
+            text.replace('\u201c', '"')
+            .replace('\u201d', '"')
+            .replace('\u2019', "'")
+            .replace('\u2018', "'")
+        )
+        
+        # Remove trailing punctuation if configured
+        if self.config.get("ignore_trailing_punctuation", False):
+            text = re.sub(r'[.!?;,]+$', '', text)
+        
+        return text
+    
+    def score(self, item: EvaluationItem) -> ScorerResult:
+        """
+        Score an item based on normalized exact match.
+        
+        Args:
+            item: The evaluation item to score
+        
+        Returns:
+            ScorerResult with binary score
+        """
+        if item.output is None:
+            return ScorerResult(
+                scorer_name="normalized_exact_match",
+                score=0.0,
+                passed=False,
+                reasoning="No output provided",
+            )
+        
+        # Normalize both texts
+        normalized_output = self.normalize_text(item.output)
+        normalized_expected = self.normalize_text(item.expected_output)
+        
+        is_match = normalized_output == normalized_expected
+        
+        return ScorerResult(
+            scorer_name="normalized_exact_match",
+            score=1.0 if is_match else 0.0,
+            passed=is_match,
+            reasoning="Normalized match found" if is_match else "No match after normalization",
+            details={
+                "raw_match": item.output == item.expected_output,
+                "normalized_output": normalized_output,
+                "normalized_expected": normalized_expected,
+            }
+        )
+
+
+
+================================================
+FILE: core/scoring/fuzzy_match.py
+================================================
+"""
+Fuzzy match scorer - uses string similarity algorithms to score matches.
+"""
+from rapidfuzz import fuzz
+from typing import Dict, Any
+
+from core.scoring.base import BaseScorer
+from core.data_models import EvaluationItem, ScorerResult
+
+
+class FuzzyMatchScorer(BaseScorer):
+    """
+    Scorer that uses fuzzy string matching to calculate similarity.
+    """
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        super().__init__(config)
+        self.threshold = self.config.get("threshold", 0.8)
+        self.algorithm = self.config.get("algorithm", "token_sort_ratio")
+    
+    @property
+    def name(self) -> str:
+        return "Fuzzy Match"
+    
+    @property
+    def description(self) -> str:
+        return f"Uses fuzzy string matching with {self.algorithm} algorithm (threshold: {self.threshold})"
+    
+    def score(self, item: EvaluationItem) -> ScorerResult:
+        """
+        Score an item using fuzzy string matching.
+        
+        Args:
+            item: The evaluation item to score
+        
+        Returns:
+            ScorerResult with similarity score (0.0 to 1.0)
+        """
+        if item.output is None:
+            return ScorerResult(
+                scorer_name="fuzzy_match",
+                score=0.0,
+                passed=False,
+                reasoning="No output provided",
+            )
+        
+        # Get the appropriate fuzzy matching function
+        if self.algorithm == "ratio":
+            similarity = fuzz.ratio(item.output, item.expected_output, processor=str.lower)
+        elif self.algorithm == "partial_ratio":
+            similarity = fuzz.partial_ratio(item.output, item.expected_output, processor=str.lower)
+        elif self.algorithm == "token_sort_ratio":
+            similarity = fuzz.token_sort_ratio(item.output, item.expected_output, processor=str.lower)
+        elif self.algorithm == "token_set_ratio":
+            similarity = fuzz.token_set_ratio(item.output, item.expected_output, processor=str.lower)
+        else:
+            # Default to token_sort_ratio
+            similarity = fuzz.token_sort_ratio(item.output, item.expected_output, processor=str.lower)
+        
+        # Convert to 0-1 scale
+        score = similarity / 100.0
+        passed = score >= self.threshold
+        
+        # Generate reasoning
+        if passed:
+            reasoning = f"Similarity score {score:.2f} meets threshold {self.threshold}"
+        else:
+            reasoning = f"Similarity score {score:.2f} below threshold {self.threshold}"
+        
+        return ScorerResult(
+            scorer_name="fuzzy_match",
+            score=score,
+            passed=passed,
+            reasoning=reasoning,
+            details={
+                "algorithm": self.algorithm,
+                "threshold": self.threshold,
+                "raw_similarity": similarity,
+                "all_scores": {
+                    "ratio": fuzz.ratio(item.output, item.expected_output, processor=str.lower),
+                    "partial_ratio": fuzz.partial_ratio(item.output, item.expected_output, processor=str.lower),
+                    "token_sort_ratio": fuzz.token_sort_ratio(item.output, item.expected_output, processor=str.lower),
+                    "token_set_ratio": fuzz.token_set_ratio(item.output, item.expected_output, processor=str.lower),
+                }
+            }
+        )
+
+
+
+================================================
+FILE: core/scoring/llm_judge.py
+================================================
+"""
+LLM-as-a-Judge scorer - uses an LLM to evaluate outputs.
+"""
+
+import json
+import asyncio
+import logging
+from typing import Dict, Any, Optional
+
+from core.scoring.base import BaseScorer
+from core.data_models import EvaluationItem, ScorerResult
+from services.llm_clients import create_llm_client
+
+logger = logging.getLogger(__name__)
+
+
+class LLMJudgeScorer(BaseScorer):
+    """Scorer that uses an LLM to judge the quality of outputs."""
+
+    def __init__(self, config: Dict[str, Any] = None):
+        super().__init__(config)
+        self.provider = self.config.get("provider", "openai")
+        self.model = self.config.get("model", "gpt-4")
+        self.temperature = self.config.get("temperature", 0.3)
+        self.max_tokens = self.config.get("max_tokens", 1000)
+        self.system_prompt = self.config.get(
+            "system_prompt", self._default_system_prompt()
+        )
+        self.api_key = self.config.get("api_key")
+        self.threshold = self.config.get("threshold", 0.7)
+
+        # LLM client is lazily created on first use
+        self.client = None
+
+    @property
+    def name(self) -> str:
+        return "LLM Judge"
+
+    @property
+    def description(self) -> str:
+        return f"Uses {self.model} to evaluate output quality"
+
+    def _default_system_prompt(self) -> str:
+        """Get the default system prompt for the judge."""
+        return """You are an expert evaluator. Compare the actual output to the expected output and provide:
+1. A boolean 'passed' field (true if the output meets acceptable standards, false otherwise)
+2. A score from 0.0 to 1.0 (where 1.0 is perfect match/quality)
+3. A brief reasoning for your score and pass/fail decision
+4. Any specific errors or discrepancies noted
+
+Consider the following criteria:
+- Factual accuracy
+- Completeness of the answer
+- Clarity and coherence
+- Relevance to the input
+
+Respond in JSON format:
+{
+    "passed": true/false,
+    "score": 0.0-1.0,
+    "reasoning": "explanation",
+    "errors": ["error1", "error2"] or []
+}"""
+
+    async def score(self, item: EvaluationItem) -> ScorerResult:
+        """Score an item using LLM judgment."""
+        if self.client is None:
+            self.client = create_llm_client(self.provider, self.api_key)
+
+        if item.output is None:
+            return ScorerResult(
+                scorer_name="llm_judge",
+                score=0.0,
+                passed=False,
+                reasoning="No output provided",
+            )
+
+        # Construct the evaluation prompt
+        user_prompt = f"""Please evaluate the following:
+
+Input/Question: {item.input}
+
+Expected Output: {item.expected_output}
+
+Actual Output: {item.output}
+
+Provide your evaluation in the specified JSON format."""
+
+        messages = [
+            {"role": "system", "content": self.system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
+        try:
+            # Call the LLM
+            response = await self.client.generate(
+                messages,
+                model=self.model,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+            )
+
+            # Parse the response
+            try:
+                # Try to extract JSON from the response
+                json_start = response.find("{")
+                json_end = response.rfind("}") + 1
+                if json_start >= 0 and json_end > json_start:
+                    json_str = response[json_start:json_end]
+                    result = json.loads(json_str)
+                else:
+                    raise ValueError("No JSON found in response")
+
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.error(f"Failed to parse LLM response as JSON: {e}")
+                logger.debug(f"Raw response: {response}")
+
+                # Fallback: try to extract score from text
+                score = self._extract_score_from_text(response)
+                result = {
+                    "score": score,
+                    "reasoning": response,
+                    "errors": ["Failed to parse structured response"],
+                }
+
+            # Extract values with defaults
+            score = float(result.get("score", 0.0))
+            score = max(0.0, min(1.0, score))
+            reasoning = result.get("reasoning", "No reasoning provided")
+            errors = result.get("errors", [])
+
+            # Prioritize explicit 'passed' field if provided
+            if "passed" in result and isinstance(result.get("passed"), bool):
+                passed = result["passed"]
+            else:
+                passed = score >= self.threshold
+                logger.warning(
+                    f"LLM response for item '{item.id}' missing 'passed' field or not a boolean. "
+                    f"Falling back to threshold check (score {score:.2f} >= {self.threshold})."
+                )
+
+            return ScorerResult(
+                scorer_name="llm_judge",
+                score=score,
+                passed=passed,
+                reasoning=reasoning,
+                details={
+                    "model": self.model,
+                    "threshold": self.threshold,
+                    "errors": errors,
+                    "raw_response": (
+                        response
+                        if self.config.get("include_raw_response", False)
+                        else None
+                    ),
+                },
+            )
+
+        except Exception as e:
+            logger.error(f"Error in LLM judge scoring: {e}")
+            return ScorerResult(
+                scorer_name="llm_judge",
+                score=0.0,
+                passed=False,
+                error=str(e),
+                reasoning=f"Failed to get LLM judgment: {str(e)}",
+            )
+
+    def _extract_score_from_text(self, text: str) -> float:
+        """Try to extract a numeric score from text response."""
+        import re
+
+        patterns = [
+            r"score[:\s]+([0-9]*\.?[0-9]+)",
+            r"([0-9]*\.?[0-9]+)/10",
+            r"([0-9]+)%",
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                value = float(match.group(1))
+                if "%" in pattern:
+                    return value / 100.0
+                elif "/10" in pattern:
+                    return value / 10.0
+                elif value <= 1.0:
+                    return value
+                elif value <= 10:
+                    return value / 10.0
+                elif value <= 100:
+                    return value / 100.0
+
+        return 0.0
+
+
+class StructuredLLMJudgeScorer(LLMJudgeScorer):
+    """Enhanced LLM Judge that enforces structured output."""
+
+    @property
+    def name(self) -> str:
+        return "Structured LLM Judge"
+
+    @property
+    def description(self) -> str:
+        return f"Uses {self.model} with structured output for consistent evaluation"
+
+    async def score(self, item: EvaluationItem) -> ScorerResult:
+        """Score using structured output capabilities."""
+        if self.client is None:
+            self.client = create_llm_client(self.provider, self.api_key)
+
+        if item.output is None:
+            return ScorerResult(
+                scorer_name="structured_llm_judge",
+                score=0.0,
+                passed=False,
+                reasoning="No output provided",
+            )
+
+        evaluation_schema = {
+            "type": "object",
+            "properties": {
+                "score": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Score from 0.0 to 1.0",
+                },
+                "reasoning": {
+                    "type": "string",
+                    "description": "Explanation for the score",
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "List of specific errors found",
+                },
+                "suggestions": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Suggestions for improvement",
+                },
+            },
+            "required": ["score", "reasoning"],
+        }
+
+        user_prompt = f"""Evaluate the actual output against the expected output.
+
+Input: {item.input}
+Expected Output: {item.expected_output}
+Actual Output: {item.output}"""
+
+        try:
+            if self.provider == "openai" and hasattr(
+                self.client, "generate_structured"
+            ):
+                result = await self.client.generate_structured(
+                    messages=[
+                        {"role": "system", "content": self.system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    model=self.model,
+                    schema=evaluation_schema,
+                    temperature=self.temperature,
+                )
+            else:
+                return await super().score(item)
+
+            score = float(result.get("score", 0.0))
+            passed = score >= self.threshold
+
+            return ScorerResult(
+                scorer_name="structured_llm_judge",
+                score=score,
+                passed=passed,
+                reasoning=result.get("reasoning", ""),
+                details={
+                    "model": self.model,
+                    "threshold": self.threshold,
+                    "errors": result.get("errors", []),
+                    "suggestions": result.get("suggestions", []),
+                },
+            )
+
+        except Exception as e:
+            logger.error(f"Error in structured LLM judge: {e}")
+            return await super().score(item)
+
+
+
+================================================
+FILE: services/__init__.py
+================================================
+"""
+Services module for external integrations.
+"""
+
+from services.llm_clients import (
+    create_llm_client,
+    BaseLLMClient,
+    OpenAIClient,
+    AnthropicClient,
+    GoogleAIClient,
+)
+
+__all__ = [
+    "create_llm_client",
+    "BaseLLMClient",
+    "OpenAIClient",
+    "AnthropicClient",
+    "GoogleAIClient",
+]
+
+
+
+================================================
+FILE: services/llm_clients.py
+================================================
+"""
+LLM client implementations for various providers.
+"""
+import os
+import logging
+from abc import ABC, abstractmethod
+from typing import List, Dict, Any, Optional
+import asyncio
+from functools import wraps
+import time
+
+logger = logging.getLogger(__name__)
+
+
+def retry_with_exponential_backoff(
+    max_retries: int = 3,
+    initial_delay: float = 1.0,
+    exponential_base: float = 2.0,
+    max_delay: float = 60.0,
+):
+    """Decorator for retrying functions with exponential backoff."""
+    def decorator(func):
+        @wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            delay = initial_delay
+            last_exception = None
+
+            for attempt in range(max_retries):
+                try:
+                    return await func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    if attempt < max_retries - 1:
+                        sleep_time = min(delay, max_delay)
+                        logger.warning(f"Attempt {attempt + 1} failed: {e}. Retrying in {sleep_time}s...")
+                        await asyncio.sleep(sleep_time)
+                        delay *= exponential_base
+                    else:
+                        logger.error(f"All {max_retries} attempts failed.")
+
+            raise last_exception
+
+        @wraps(func)
+        def sync_wrapper(*args, **kwargs):
+            delay = initial_delay
+            last_exception = None
+
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    if attempt < max_retries - 1:
+                        sleep_time = min(delay, max_delay)
+                        logger.warning(f"Attempt {attempt + 1} failed: {e}. Retrying in {sleep_time}s...")
+                        time.sleep(sleep_time)
+                        delay *= exponential_base
+                    else:
+                        logger.error(f"All {max_retries} attempts failed.")
+
+            raise last_exception
+
+        return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
+
+    return decorator
+
+
+class BaseLLMClient(ABC):
+    """Abstract base class for LLM clients."""
+
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key
+
+    @abstractmethod
+    async def generate(
+        self,
+        messages: List[Dict[str, str]],
+        model: str,
+        temperature: float = 0.7,
+        max_tokens: int = 1000,
+        **kwargs
+    ) -> str:
+        """Generate a response from the LLM."""
+        pass
+
+    @abstractmethod
+    def validate_api_key(self) -> bool:
+        """Validate that the API key is set and valid."""
+        pass
+
+
+class OpenAIClient(BaseLLMClient):
+    """OpenAI API client."""
+
+    def __init__(self, api_key: Optional[str] = None):
+        super().__init__(api_key or os.getenv("OPENAI_API_KEY"))
+        self._client = None
+
+    @property
+    def client(self):
+        """Lazy initialization of OpenAI client."""
+        if self._client is None:
+            try:
+                from openai import AsyncOpenAI
+                self._client = AsyncOpenAI(api_key=self.api_key)
+            except ImportError:
+                raise ImportError("OpenAI package not installed. Run: pip install openai")
+        return self._client
+
+    @retry_with_exponential_backoff()
+    async def generate(
+        self,
+        messages: List[Dict[str, str]],
+        model: str = "gpt-4",
+        temperature: float = 0.7,
+        max_tokens: int = 1000,
+        **kwargs
+    ) -> str:
+        """Generate response using OpenAI API."""
+        try:
+            response = await self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                **kwargs
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            logger.error(f"OpenAI API error: {e}")
+            raise
+
+    async def generate_structured(
+        self,
+        messages: List[Dict[str, str]],
+        model: str,
+        schema: Dict[str, Any],
+        temperature: float = 0.3,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Generate structured output using function calling."""
+        try:
+            response = await self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                response_format={"type": "json_object"},
+                **kwargs
+            )
+
+            import json
+            return json.loads(response.choices[0].message.content)
+        except Exception as e:
+            logger.error(f"OpenAI structured generation error: {e}")
+            raise
+
+    def validate_api_key(self) -> bool:
+        """Validate OpenAI API key."""
+        return bool(self.api_key and self.api_key.startswith('sk-'))
+
+
+class AnthropicClient(BaseLLMClient):
+    """Anthropic (Claude) API client."""
+
+    def __init__(self, api_key: Optional[str] = None):
+        super().__init__(api_key or os.getenv("ANTHROPIC_API_KEY"))
+        self._client = None
+
+    @property
+    def client(self):
+        """Lazy initialization of Anthropic client."""
+        if self._client is None:
+            try:
+                from anthropic import AsyncAnthropic
+                self._client = AsyncAnthropic(api_key=self.api_key)
+            except ImportError:
+                raise ImportError("Anthropic package not installed. Run: pip install anthropic")
+        return self._client
+
+    @retry_with_exponential_backoff()
+    async def generate(
+        self,
+        messages: List[Dict[str, str]],
+        model: str = "claude-3-opus-20240229",
+        temperature: float = 0.7,
+        max_tokens: int = 1000,
+        **kwargs
+    ) -> str:
+        """Generate response using Anthropic API."""
+        try:
+            system_message = None
+            user_messages = []
+
+            for msg in messages:
+                if msg["role"] == "system":
+                    system_message = msg["content"]
+                else:
+                    user_messages.append({
+                        "role": msg["role"],
+                        "content": msg["content"]
+                    })
+
+            response = await self.client.messages.create(
+                model=model,
+                messages=user_messages,
+                system=system_message,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                **kwargs
+            )
+
+            return response.content[0].text
+        except Exception as e:
+            logger.error(f"Anthropic API error: {e}")
+            raise
+
+    def validate_api_key(self) -> bool:
+        """Validate Anthropic API key."""
+        return bool(self.api_key)
+
+
+class GoogleAIClient(BaseLLMClient):
+    """Google AI (Gemini) API client."""
+
+    def __init__(self, api_key: Optional[str] = None):
+        super().__init__(api_key or os.getenv("GOOGLE_API_KEY"))
+        self._client = None
+
+    @property
+    def client(self):
+        """Lazy initialization of Google AI client."""
+        if self._client is None:
+            try:
+                import google.generativeai as genai
+                genai.configure(api_key=self.api_key)
+                self._client = genai
+            except ImportError:
+                raise ImportError("Google AI package not installed. Run: pip install google-generativeai")
+        return self._client
+
+    @retry_with_exponential_backoff()
+    async def generate(
+        self,
+        messages: List[Dict[str, str]],
+        model: str = "gemini-1.5-pro",
+        temperature: float = 0.7,
+        max_tokens: int = 1000,
+        **kwargs
+    ) -> str:
+        """Generate response using Google AI API."""
+        try:
+            genai_model = self.client.GenerativeModel(model)
+
+            chat_history = []
+            last_user_message = ""
+
+            for msg in messages:
+                if msg["role"] == "system":
+                    continue
+                elif msg["role"] == "user":
+                    last_user_message = msg["content"]
+                else:
+                    chat_history.append({
+                        "role": "user" if msg["role"] == "user" else "model",
+                        "parts": [msg["content"]]
+                    })
+
+            system_content = next((msg["content"] for msg in messages if msg["role"] == "system"), "")
+            if system_content:
+                last_user_message = f"{system_content}\n\n{last_user_message}"
+
+            chat = genai_model.start_chat(history=chat_history)
+
+            response = await asyncio.to_thread(
+                chat.send_message,
+                last_user_message,
+                generation_config={
+                    "temperature": temperature,
+                    "max_output_tokens": max_tokens,
+                    **kwargs
+                }
+            )
+
+            return response.text
+        except Exception as e:
+            logger.error(f"Google AI API error: {e}")
+            raise
+
+    def validate_api_key(self) -> bool:
+        """Validate Google AI API key."""
+        return bool(self.api_key)
+
+
+def create_llm_client(provider: str, api_key: Optional[str] = None) -> BaseLLMClient:
+    """Factory function to create an LLM client."""
+    providers = {
+        "openai": OpenAIClient,
+        "anthropic": AnthropicClient,
+        "google": GoogleAIClient,
+    }
+
+    if provider not in providers:
+        raise ValueError(f"Unsupported provider: {provider}. Choose from: {list(providers.keys())}")
+
+    client_class = providers[provider]
+    client = client_class(api_key)
+
+    if not client.validate_api_key():
+        raise ValueError(f"Invalid or missing API key for {provider}")
+
+    return client
+
+
+
+================================================
+FILE: tests/conftest.py
+================================================
+# tests/conftest.py
+import pytest
+import os
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "requires_api: marks tests that need API keys"
+    )
+
+@pytest.fixture
+def mock_api_keys():
+    return {
+        "openai": "test-key",
+        "anthropic": "test-key",
+        "google": "test-key"
+    }
+
+
+
+================================================
+FILE: tests/integration/test_end_to_end.py
+================================================
+"""
+Integration tests for end-to-end evaluation flow.
+"""
+
+import pytest
+import asyncio
+import pandas as pd
+from pathlib import Path
+import tempfile
+import json
+
+from core.data_models import EvaluationItem, EvaluationMode, EvaluationResults
+from core.ingestion import load_evaluation_data, create_sample_data
+from core.evaluation import run_evaluation
+from core.generation import generate_outputs
+from core.reporting import results_to_csv, results_to_json, generate_summary_report
+from core.scoring import get_available_scorers
+from services.llm_clients import create_llm_client
+
+
+class TestEndToEndEvaluation:
+    """Test complete evaluation workflows."""
+
+    @pytest.fixture
+    def sample_data_file(self):
+        """Create a temporary CSV file with sample data."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
+            df = create_sample_data(num_items=5, include_output=True)
+            df.to_csv(f.name, index=False)
+            yield f.name
+        Path(f.name).unlink()
+
+    @pytest.fixture
+    def sample_items(self):
+        """Create sample evaluation items."""
+        return [
+            EvaluationItem(
+                id="1", input="What is 2+2?", output="4", expected_output="4"
+            ),
+            EvaluationItem(
+                id="2",
+                input="What is the capital of France?",
+                output="Paris",
+                expected_output="Paris",
+            ),
+            EvaluationItem(
+                id="3",
+                input="Translate 'hello' to Spanish",
+                output="Hola",
+                expected_output="hola",  # Different case
+            ),
+        ]
+
+    def test_load_evaluation_data_from_csv(self, sample_data_file):
+        """Test loading evaluation data from CSV file."""
+        items = load_evaluation_data(sample_data_file, EvaluationMode.EVALUATE_EXISTING)
+
+        assert len(items) == 5
+        assert all(isinstance(item, EvaluationItem) for item in items)
+        assert all(
+            item.input and item.output and item.expected_output for item in items
+        )
+
+    def test_load_evaluation_data_from_dataframe(self):
+        """Test loading evaluation data from DataFrame."""
+        df = pd.DataFrame(
+            {
+                "input": ["Question 1", "Question 2"],
+                "output": ["Answer 1", "Answer 2"],
+                "expected_output": ["Answer 1", "Answer 2"],
+                "metadata_source": ["test", "test"],
+            }
+        )
+
+        items = load_evaluation_data(df, EvaluationMode.EVALUATE_EXISTING)
+
+        assert len(items) == 2
+        assert items[0].metadata["metadata_source"] == "test"
+
+    @pytest.mark.asyncio
+    async def test_run_evaluation_single_scorer(self, sample_items):
+        """Test running evaluation with a single scorer."""
+        # Mock API keys
+        api_keys = {"openai": "test-key"}
+
+        # Run evaluation
+        results = await run_evaluation(
+            items=sample_items,
+            selected_scorers=["exact_match"],
+            scorer_configs={},
+            api_keys=api_keys,
+        )
+
+        assert isinstance(results, EvaluationResults)
+        assert len(results.items) == 3
+        assert all(len(item.scores) == 1 for item in results.items)
+        assert "exact_match" in results.summary_stats
+
+        # Check summary stats
+        stats = results.summary_stats["exact_match"]
+        assert stats["total"] == 3
+        assert stats["passed"] == 2  # First two should pass
+        assert stats["failed"] == 1  # Third fails due to case
+
+    @pytest.mark.asyncio
+    async def test_run_evaluation_multiple_scorers(self, sample_items):
+        """Test running evaluation with multiple scorers."""
+        # Configure scorers
+        scorer_configs = {
+            "fuzzy_match": {"threshold": 0.8},
+        }
+
+        results = await run_evaluation(
+            items=sample_items,
+            selected_scorers=["exact_match", "fuzzy_match"],
+            scorer_configs=scorer_configs,
+            api_keys={},
+        )
+
+        assert len(results.items) == 3
+        assert all(len(item.scores) == 2 for item in results.items)
+        assert "exact_match" in results.summary_stats
+        assert "fuzzy_match" in results.summary_stats
+
+        # Fuzzy match should pass all items
+        fuzzy_stats = results.summary_stats["fuzzy_match"]
+        assert fuzzy_stats["passed"] == 3
+
+    def test_results_to_csv(self, sample_items):
+        """Test converting results to CSV format."""
+        # Create mock results
+        results = EvaluationResults(
+            items=sample_items,
+            config={"test": True},
+            metadata={"mode": "test"},
+        )
+
+        # Add some scores
+        from core.data_models import ScorerResult
+
+        for item in results.items:
+            item.scores.append(
+                ScorerResult(
+                    scorer_name="exact_match",
+                    score=(
+                        1.0
+                        if item.output.lower() == item.expected_output.lower()
+                        else 0.0
+                    ),
+                    passed=item.output.lower() == item.expected_output.lower(),
+                    reasoning="Test",
+                )
+            )
+
+        csv_content = results_to_csv(results)
+
+        assert "id,input,output,expected_output" in csv_content
+        assert "exact_match_score" in csv_content
+        assert "exact_match_passed" in csv_content
+
+    def test_results_to_json(self, sample_items):
+        """Test converting results to JSON format."""
+        results = EvaluationResults(
+            items=sample_items,
+            config={"test": True},
+            metadata={"mode": "test"},
+        )
+
+        json_content = results_to_json(results)
+        parsed = json.loads(json_content)
+
+        assert "items" in parsed
+        assert len(parsed["items"]) == 3
+        assert "config" in parsed
+        assert "metadata" in parsed
+
+    def test_generate_summary_report(self, sample_items):
+        """Test generating a summary report."""
+        # Create results with stats
+        results = EvaluationResults(
+            items=sample_items,
+            config={"scorers": ["exact_match"]},
+            metadata={"mode": "evaluate_existing", "duration_seconds": 1.5},
+        )
+
+        # Add scores
+        from core.data_models import ScorerResult
+
+        for i, item in enumerate(results.items):
+            item.scores.append(
+                ScorerResult(
+                    scorer_name="exact_match",
+                    score=1.0 if i < 2 else 0.0,
+                    passed=i < 2,
+                    reasoning="Match" if i < 2 else "No match",
+                )
+            )
+
+        # Calculate stats
+        results.calculate_summary_stats()
+
+        report = generate_summary_report(results)
+
+        assert "# Evaluation Summary Report" in report
+        assert "- **Total Items Evaluated**: 3" in report
+        assert "Exact Match" in report
+        assert "- **Accuracy**: 66.7%" in report
+        assert "- **Items Passed**: 2/3" in report
+
+    @pytest.mark.asyncio
+    async def test_complete_workflow_mode_a(self, sample_data_file):
+        """Test complete workflow for Mode A (evaluate existing)."""
+        # Load data
+        items = load_evaluation_data(sample_data_file, EvaluationMode.EVALUATE_EXISTING)
+
+        # Run evaluation
+        results = await run_evaluation(
+            items=items,
+            selected_scorers=["exact_match", "fuzzy_match"],
+            scorer_configs={"fuzzy_match": {"threshold": 0.9}},
+            api_keys={},
+        )
+
+        # Generate reports
+        csv_report = results_to_csv(results)
+        json_report = results_to_json(results)
+        summary = generate_summary_report(results)
+
+        # Verify outputs
+        assert len(results.items) == 5
+        assert all(len(item.scores) == 2 for item in results.items)
+        assert "exact_match" in results.summary_stats
+        assert "fuzzy_match" in results.summary_stats
+        assert len(csv_report) > 0
+        assert len(json_report) > 0
+        assert "# Evaluation Summary Report" in summary
+
+    def test_get_available_scorers(self):
+        """Test getting list of available scorers."""
+        scorers = get_available_scorers()
+
+        assert "exact_match" in scorers
+        assert "fuzzy_match" in scorers
+        assert "llm_judge" in scorers
+
+        for scorer_info in scorers.values():
+            assert "class" in scorer_info
+            assert "display_name" in scorer_info
+            assert "description" in scorer_info
+
+    # ADD THESE MARKED TESTS FOR MODE B (GENERATION) AND LLM JUDGE
+    @pytest.mark.requires_api
+    @pytest.mark.asyncio
+    async def test_generate_outputs(self):
+        """Test generating outputs using an Actor LLM."""
+        items = [
+            EvaluationItem(id="1", input="What is 2+2?", expected_output="4"),
+            EvaluationItem(
+                id="2", input="What is the capital of France?", expected_output="Paris"
+            ),
+        ]
+
+        actor_config = {
+            "provider": "openai",
+            "model": "gpt-3.5-turbo",
+            "temperature": 0.3,
+            "max_tokens": 100,
+            "api_key": os.getenv("OPENAI_API_KEY"),  # This would need a real key
+        }
+
+        # This test would actually call the OpenAI API
+        updated_items = await generate_outputs(items, actor_config)
+
+        assert len(updated_items) == 2
+        assert all(item.output is not None for item in updated_items)
+        assert all(len(item.output) > 0 for item in updated_items)
+
+    @pytest.mark.requires_api
+    @pytest.mark.asyncio
+    async def test_llm_judge_scorer(self):
+        """Test LLM Judge scorer with real API calls."""
+        from core.scoring.llm_judge import LLMJudgeScorer
+
+        item = EvaluationItem(
+            id="1",
+            input="What is the capital of France?",
+            output="Paris is the capital of France.",
+            expected_output="Paris",
+        )
+
+        config = {
+            "provider": "openai",
+            "model": "gpt-3.5-turbo",
+            "temperature": 0.3,
+            "api_key": os.getenv("OPENAI_API_KEY"),  # This would need a real key
+        }
+
+        scorer = LLMJudgeScorer(config)
+        result = await scorer.score(item)
+
+        assert result.score >= 0.0 and result.score <= 1.0
+        assert isinstance(result.passed, bool)
+        assert result.reasoning is not None
+        assert len(result.reasoning) > 0
+
+    @pytest.mark.requires_api
+    def test_create_llm_client(self):
+        """Test creating LLM clients with real API keys."""
+        # This test would validate real API keys
+        from services.llm_clients import create_llm_client
+
+        # Test OpenAI client
+        client = create_llm_client("openai", os.getenv("OPENAI_API_KEY"))
+        assert client.validate_api_key()
+
+        # Test Anthropic client
+        client = create_llm_client("anthropic", os.getenv("ANTHROPIC_API_KEY"))
+        assert client.validate_api_key()
+
+
+class TestErrorHandling:
+    """Test error handling in the evaluation pipeline."""
+
+    def test_load_invalid_csv(self):
+        """Test loading CSV with missing columns."""
+        df = pd.DataFrame(
+            {
+                "input": ["Q1", "Q2"],
+                # Missing expected_output column
+            }
+        )
+
+        with pytest.raises(ValueError, match="Missing required columns"):
+            load_evaluation_data(df, EvaluationMode.EVALUATE_EXISTING)
+
+    @pytest.mark.asyncio
+    async def test_scorer_error_handling(self):
+        """Test that scorer errors are handled gracefully."""
+        # Create item that might cause scorer issues
+        items = [
+            EvaluationItem(
+                id="1",
+                input="Test",
+                output=None,  # This will cause issues
+                expected_output="Expected",
+            )
+        ]
+
+        results = await run_evaluation(
+            items=items,
+            selected_scorers=["exact_match"],
+            scorer_configs={},
+            api_keys={},
+        )
+
+        # Should still return results
+        assert len(results.items) == 1
+        assert len(results.items[0].scores) == 1
+        assert results.items[0].scores[0].score == 0.0
+        assert not results.items[0].scores[0].passed
+
+    def test_invalid_scorer_name(self):
+        """Test handling of invalid scorer name."""
+        from core.scoring import create_scorer
+
+        with pytest.raises(ValueError, match="Unknown scorer"):
+            create_scorer("invalid_scorer_name")
+
+
+class TestReporting:
+    """Test reporting functionality."""
+
+    def test_csv_export_with_metadata(self):
+        """Test CSV export includes metadata columns."""
+        items = [
+            EvaluationItem(
+                id="1",
+                input="Test",
+                output="Output",
+                expected_output="Expected",
+                metadata={"source": "test", "category": "math"},
+            )
+        ]
+
+        results = EvaluationResults(items=items, config={}, metadata={})
+        csv_content = results_to_csv(results)
+
+        assert "metadata_source" in csv_content
+        assert "metadata_category" in csv_content
+        assert "test" in csv_content
+        assert "math" in csv_content
+
+    def test_json_export_structure(self):
+        """Test JSON export has correct structure."""
+        items = [
+            EvaluationItem(
+                id="1", input="Test", output="Output", expected_output="Expected"
+            )
+        ]
+
+        from core.data_models import ScorerResult
+
+        items[0].scores.append(
+            ScorerResult(
+                scorer_name="test_scorer",
+                score=0.5,
+                passed=False,
+                reasoning="Test reasoning",
+                details={"extra": "info"},
+            )
+        )
+
+        results = EvaluationResults(
+            items=items, config={"test": "config"}, metadata={"test": "metadata"}
+        )
+
+        json_data = json.loads(results_to_json(results))
+
+        assert json_data["items"][0]["id"] == "1"
+        assert json_data["items"][0]["scores"][0]["scorer_name"] == "test_scorer"
+        assert json_data["items"][0]["scores"][0]["score"] == 0.5
+        assert json_data["items"][0]["scores"][0]["details"]["extra"] == "info"
+        assert json_data["config"]["test"] == "config"
+        assert json_data["metadata"]["test"] == "metadata"
+
+
+# Note: Tests for Mode B (generation) and LLM Judge would require mocking
+# the LLM clients, which would be implemented separately
+
+
+
+================================================
+FILE: tests/unit/test_exact_match.py
+================================================
+"""
+Unit tests for exact match scorer.
+"""
+
+import pytest
+from core.data_models import EvaluationItem, ScorerResult
+from core.scoring.exact_match import (
+    ExactMatchScorer,
+    CaseInsensitiveExactMatchScorer,
+    NormalizedExactMatchScorer,
+)
+
+
+class TestExactMatchScorer:
+    """Test cases for ExactMatchScorer."""
+
+    def test_exact_match_success(self):
+        """Test exact match when strings are identical."""
+        scorer = ExactMatchScorer()
+        item = EvaluationItem(input="What is 2+2?", output="4", expected_output="4")
+
+        result = scorer.score(item)
+
+        assert isinstance(result, ScorerResult)
+        assert result.score == 1.0
+        assert result.passed is True
+        assert "Exact match found" in result.reasoning
+
+    def test_exact_match_failure(self):
+        """Test exact match when strings differ."""
+        scorer = ExactMatchScorer()
+        item = EvaluationItem(input="What is 2+2?", output="Four", expected_output="4")
+
+        result = scorer.score(item)
+
+        assert result.score == 0.0
+        assert result.passed is False
+        assert "does not exactly match" in result.reasoning
+
+    def test_exact_match_whitespace_handling(self):
+        """Test that whitespace is stripped before comparison."""
+        scorer = ExactMatchScorer()
+        item = EvaluationItem(
+            input="Test", output="  Hello World  ", expected_output="Hello World"
+        )
+
+        result = scorer.score(item)
+
+        assert result.score == 1.0
+        assert result.passed is True
+
+    def test_exact_match_no_output(self):
+        """Test handling when output is None."""
+        scorer = ExactMatchScorer()
+        item = EvaluationItem(input="Test", output=None, expected_output="Expected")
+
+        result = scorer.score(item)
+
+        assert result.score == 0.0
+        assert result.passed is False
+        assert "No output provided" in result.reasoning
+
+    def test_exact_match_includes_details(self):
+        """Test that result includes helpful details."""
+        scorer = ExactMatchScorer()
+        item = EvaluationItem(
+            input="Test", output="Hello", expected_output="Hello World"
+        )
+
+        result = scorer.score(item)
+
+        assert result.details["output_length"] == 5
+        assert result.details["expected_length"] == 11
+        assert result.details["stripped_match"] is False
+
+
+class TestCaseInsensitiveExactMatchScorer:
+    """Test cases for CaseInsensitiveExactMatchScorer."""
+
+    def test_case_insensitive_match(self):
+        """Test case-insensitive matching."""
+        scorer = CaseInsensitiveExactMatchScorer()
+        item = EvaluationItem(
+            input="Test", output="HELLO WORLD", expected_output="hello world"
+        )
+
+        result = scorer.score(item)
+
+        assert result.score == 1.0
+        assert result.passed is True
+
+    def test_case_insensitive_no_match(self):
+        """Test case-insensitive non-matching."""
+        scorer = CaseInsensitiveExactMatchScorer()
+        item = EvaluationItem(
+            input="Test", output="HELLO", expected_output="hello world"
+        )
+
+        result = scorer.score(item)
+
+        assert result.score == 0.0
+        assert result.passed is False
+
+    def test_details_include_case_sensitive_info(self):
+        """Test that details show both case-sensitive and insensitive results."""
+        scorer = CaseInsensitiveExactMatchScorer()
+        item = EvaluationItem(input="Test", output="Hello", expected_output="HELLO")
+
+        result = scorer.score(item)
+
+        assert result.details["case_sensitive_match"] is False
+        assert result.details["case_insensitive_match"] is True
+
+
+class TestNormalizedExactMatchScorer:
+    """Test cases for NormalizedExactMatchScorer."""
+
+    def test_normalization_whitespace(self):
+        """Test whitespace normalization."""
+        scorer = NormalizedExactMatchScorer()
+        item = EvaluationItem(
+            input="Test",
+            output="Hello    World",  # Multiple spaces
+            expected_output="hello world",  # Single space
+        )
+
+        result = scorer.score(item)
+
+        assert result.score == 1.0
+        assert result.passed is True
+
+    def test_normalization_smart_quotes(self):
+        """Test smart quote normalization."""
+        scorer = NormalizedExactMatchScorer()
+        item = EvaluationItem(
+            input="Test",
+            output="\u201cHello World\u201d",  # Smart quotes
+            expected_output='"Hello World"',  # Regular quotes
+        )
+
+        result = scorer.score(item)
+
+        assert result.score == 1.0
+        assert result.passed is True
+
+    def test_normalization_apostrophes(self):
+        """Test smart apostrophe normalization."""
+        scorer = NormalizedExactMatchScorer()
+        item = EvaluationItem(
+            input="Test",
+            output="It\u2019s working",  # Smart apostrophe
+            expected_output="It's working",  # Regular apostrophe
+        )
+
+        result = scorer.score(item)
+
+        assert result.score == 1.0
+        assert result.passed is True
+
+    def test_ignore_trailing_punctuation_config(self):
+        """Test configuration to ignore trailing punctuation."""
+        scorer = NormalizedExactMatchScorer({"ignore_trailing_punctuation": True})
+        item = EvaluationItem(
+            input="Test", output="Hello World!", expected_output="Hello World"
+        )
+
+        result = scorer.score(item)
+
+        assert result.score == 1.0
+        assert result.passed is True
+
+    def test_keep_trailing_punctuation_default(self):
+        """Test that trailing punctuation is kept by default."""
+        scorer = NormalizedExactMatchScorer()
+        item = EvaluationItem(
+            input="Test", output="Hello World!", expected_output="Hello World"
+        )
+
+        result = scorer.score(item)
+
+        assert result.score == 0.0
+        assert result.passed is False
+
+    def test_details_show_normalized_values(self):
+        """Test that details include normalized values."""
+        scorer = NormalizedExactMatchScorer()
+        item = EvaluationItem(
+            input="Test", output="HELLO   WORLD", expected_output="hello world"
+        )
+
+        result = scorer.score(item)
+
+        assert result.details["normalized_output"] == "hello world"
+        assert result.details["normalized_expected"] == "hello world"
+        assert result.details["raw_match"] is False
+
+
+@pytest.mark.parametrize(
+    "output,expected,should_match",
+    [
+        ("Hello", "Hello", True),
+        ("Hello ", " Hello", True),
+        ("HELLO", "hello", False),
+        ("Hello!", "Hello", False),
+        ("", "", True),
+        ("  ", "", True),
+    ],
+)
+def test_exact_match_parametrized(output, expected, should_match):
+    """Parametrized tests for exact match scorer."""
+    scorer = ExactMatchScorer()
+    if not expected.strip() and not output.strip():
+        with pytest.raises(ValueError):
+            EvaluationItem(input="Test", output=output, expected_output=expected)
+        return
+
+    item = EvaluationItem(
+        input="Test",
+        output=output,
+        expected_output=expected,
+    )
+
+    result = scorer.score(item)
+
+    if should_match:
+        assert result.score == 1.0
+        assert result.passed is True
+    else:
+        assert result.score == 0.0
+        assert result.passed is False
+
+
+
+================================================
+FILE: utils/__init__.py
+================================================
+"""
+Utility functions for the AI Evaluation Workbench.
+"""
+
+from utils.file_cache import FileCache, cache_result
+from utils.telemetry import (
+    init_telemetry,
+    trace_function,
+    log_metric,
+    create_span,
+)
+
+__all__ = [
+    "FileCache",
+    "cache_result",
+    "init_telemetry",
+    "trace_function",
+    "log_metric",
+    "create_span",
+]
+
+
+
+================================================
+FILE: utils/file_cache.py
+================================================
+"""
+File-based caching for expensive operations.
+"""
+import json
+import hashlib
+import os
+from pathlib import Path
+from typing import Any, Optional, Callable
+from datetime import datetime, timedelta
+import pickle
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class FileCache:
+    """Simple file-based cache for storing results of expensive operations."""
+
+    def __init__(self, cache_dir: str = ".cache", ttl_hours: int = 24):
+        """Initialize file cache."""
+        self.cache_dir = Path(cache_dir)
+        self.cache_dir.mkdir(exist_ok=True)
+        self.ttl = timedelta(hours=ttl_hours)
+
+    def _get_cache_key(self, key_data: Any) -> str:
+        """Generate a cache key from input data."""
+        key_str = json.dumps(key_data, sort_keys=True)
+        return hashlib.sha256(key_str.encode()).hexdigest()
+
+    def _get_cache_path(self, cache_key: str) -> Path:
+        """Get the file path for a cache key."""
+        return self.cache_dir / f"{cache_key}.cache"
+
+    def get(self, key_data: Any) -> Optional[Any]:
+        """Retrieve a value from cache."""
+        cache_key = self._get_cache_key(key_data)
+        cache_path = self._get_cache_path(cache_key)
+
+        if not cache_path.exists():
+            return None
+
+        try:
+            with open(cache_path, 'rb') as f:
+                cache_data = pickle.load(f)
+
+            cached_time = datetime.fromisoformat(cache_data['timestamp'])
+            if datetime.now() - cached_time > self.ttl:
+                logger.debug(f"Cache expired for key {cache_key}")
+                cache_path.unlink()
+                return None
+
+            logger.debug(f"Cache hit for key {cache_key}")
+            return cache_data['value']
+
+        except Exception as e:
+            logger.error(f"Error reading cache: {e}")
+            return None
+
+    def set(self, key_data: Any, value: Any) -> None:
+        """Store a value in cache."""
+        cache_key = self._get_cache_key(key_data)
+        cache_path = self._get_cache_path(cache_key)
+
+        cache_data = {
+            'timestamp': datetime.now().isoformat(),
+            'value': value,
+            'key_data': key_data,
+        }
+
+        try:
+            with open(cache_path, 'wb') as f:
+                pickle.dump(cache_data, f)
+            logger.debug(f"Cached value for key {cache_key}")
+        except Exception as e:
+            logger.error(f"Error writing cache: {e}")
+
+    def clear(self) -> None:
+        """Clear all cache entries."""
+        for cache_file in self.cache_dir.glob("*.cache"):
+            try:
+                cache_file.unlink()
+            except Exception as e:
+                logger.error(f"Error deleting cache file {cache_file}: {e}")
+        logger.info("Cache cleared")
+
+    def get_size(self) -> int:
+        """Get total size of cache in bytes."""
+        total_size = 0
+        for cache_file in self.cache_dir.glob("*.cache"):
+            total_size += cache_file.stat().st_size
+        return total_size
+
+    def cleanup_expired(self) -> int:
+        """Remove expired cache entries. Returns number of entries removed."""
+        removed = 0
+        for cache_file in self.cache_dir.glob("*.cache"):
+            try:
+                with open(cache_file, 'rb') as f:
+                    cache_data = pickle.load(f)
+
+                cached_time = datetime.fromisoformat(cache_data['timestamp'])
+                if datetime.now() - cached_time > self.ttl:
+                    cache_file.unlink()
+                    removed += 1
+            except Exception as e:
+                logger.error(f"Error checking cache file {cache_file}: {e}")
+
+        if removed > 0:
+            logger.info(f"Removed {removed} expired cache entries")
+        return removed
+
+
+def cache_result(
+    cache_dir: str = ".cache",
+    ttl_hours: int = 24,
+    key_func: Optional[Callable] = None,
+):
+    """Decorator to cache function results."""
+    def decorator(func):
+        cache = FileCache(cache_dir, ttl_hours)
+
+        def wrapper(*args, **kwargs):
+            if key_func:
+                key_data = key_func(*args, **kwargs)
+            else:
+                key_data = {
+                    'func': func.__name__,
+                    'args': args,
+                    'kwargs': kwargs,
+                }
+
+            cached_value = cache.get(key_data)
+            if cached_value is not None:
+                return cached_value
+
+            result = func(*args, **kwargs)
+            cache.set(key_data, result)
+            return result
+
+        async def async_wrapper(*args, **kwargs):
+            if key_func:
+                key_data = key_func(*args, **kwargs)
+            else:
+                key_data = {
+                    'func': func.__name__,
+                    'args': args,
+                    'kwargs': kwargs,
+                }
+
+            cached_value = cache.get(key_data)
+            if cached_value is not None:
+                return cached_value
+
+            result = await func(*args, **kwargs)
+            cache.set(key_data, result)
+            return result
+
+        import asyncio
+        return async_wrapper if asyncio.iscoroutinefunction(func) else wrapper
+
+    return decorator
+
+
+_global_cache = FileCache()
+
+
+def get_cache() -> FileCache:
+    """Get the global cache instance."""
+    return _global_cache
+
+
+
+================================================
+FILE: utils/telemetry.py
+================================================
+"""
+Telemetry utilities for observability and monitoring.
+Currently provides stubs for future OpenTelemetry integration.
+"""
+import logging
+from typing import Any, Dict, Optional, Callable
+from functools import wraps
+from contextlib import contextmanager
+import time
+
+logger = logging.getLogger(__name__)
+
+
+_tracer = None
+
+
+def init_telemetry(
+    service_name: str = "ai-eval-workbench",
+    enable: bool = None,
+    endpoint: Optional[str] = None,
+) -> None:
+    """Initialize telemetry/tracing."""
+    import os
+
+    if enable is None:
+        enable = os.getenv("ENABLE_TELEMETRY", "false").lower() == "true"
+
+    if not enable:
+        logger.info("Telemetry disabled")
+        return
+
+    try:
+        logger.info(f"Telemetry initialized for service: {service_name}")
+    except Exception as e:
+        logger.error(f"Failed to initialize telemetry: {e}")
+
+
+@contextmanager
+def create_span(name: str, attributes: Optional[Dict[str, Any]] = None):
+    """Create a trace span (context manager)."""
+    start_time = time.time()
+
+    try:
+        logger.debug(f"Starting span: {name}")
+        if attributes:
+            logger.debug(f"Span attributes: {attributes}")
+        yield
+    finally:
+        duration = time.time() - start_time
+        logger.debug(f"Completed span: {name} (duration: {duration:.3f}s)")
+
+
+def trace_function(
+    name: Optional[str] = None,
+    attributes: Optional[Dict[str, Any]] = None,
+):
+    """Decorator to trace function execution."""
+    def decorator(func):
+        span_name = name or f"{func.__module__}.{func.__name__}"
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            with create_span(span_name, attributes):
+                return func(*args, **kwargs)
+
+        @wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            with create_span(span_name, attributes):
+                return await func(*args, **kwargs)
+
+        import asyncio
+        return async_wrapper if asyncio.iscoroutinefunction(func) else wrapper
+
+    return decorator
+
+
+def log_metric(
+    name: str,
+    value: float,
+    unit: str = "",
+    tags: Optional[Dict[str, str]] = None,
+) -> None:
+    """Log a metric value."""
+    metric_info = {
+        "name": name,
+        "value": value,
+        "unit": unit,
+    }
+    if tags:
+        metric_info["tags"] = tags
+
+    logger.info(f"Metric: {metric_info}")
+
+
+
+def trace_llm_call(
+    provider: str,
+    model: str,
+    input_tokens: Optional[int] = None,
+    output_tokens: Optional[int] = None,
+    duration: Optional[float] = None,
+    error: Optional[str] = None,
+) -> None:
+    """Trace an LLM API call."""
+    span_attrs = {
+        "llm.provider": provider,
+        "llm.model": model,
+    }
+
+    if input_tokens is not None:
+        span_attrs["llm.input_tokens"] = input_tokens
+    if output_tokens is not None:
+        span_attrs["llm.output_tokens"] = output_tokens
+    if duration is not None:
+        span_attrs["llm.duration_ms"] = int(duration * 1000)
+    if error:
+        span_attrs["llm.error"] = error
+
+    logger.info(f"LLM call trace: {span_attrs}")
+
+    if duration is not None:
+        log_metric(
+            "llm.call.duration",
+            duration,
+            "seconds",
+            {"provider": provider, "model": model}
+        )
+
+    if input_tokens is not None:
+        log_metric(
+            "llm.tokens.input",
+            input_tokens,
+            "tokens",
+            {"provider": provider, "model": model}
+        )
+
+    if output_tokens is not None:
+        log_metric(
+            "llm.tokens.output",
+            output_tokens,
+            "tokens",
+            {"provider": provider, "model": model}
+        )
+
+
+class TelemetryContext:
+    """Context for collecting telemetry data during an operation."""
+
+    def __init__(self, operation_name: str):
+        self.operation_name = operation_name
+        self.start_time = None
+        self.end_time = None
+        self.attributes = {}
+        self.metrics = {}
+        self.events = []
+
+    def __enter__(self):
+        self.start_time = time.time()
+        logger.debug(f"Started telemetry context: {self.operation_name}")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.end_time = time.time()
+        duration = self.end_time - self.start_time
+
+        if exc_type:
+            self.add_event("error", {"type": str(exc_type), "message": str(exc_val)})
+
+        logger.info(
+            f"Completed telemetry context: {self.operation_name}",
+            extra={
+                "duration": duration,
+                "attributes": self.attributes,
+                "metrics": self.metrics,
+                "events": self.events,
+            }
+        )
+
+    def set_attribute(self, key: str, value: Any) -> None:
+        self.attributes[key] = value
+
+    def add_metric(self, name: str, value: float, unit: str = "") -> None:
+        self.metrics[name] = {"value": value, "unit": unit}
+
+    def add_event(self, name: str, attributes: Optional[Dict[str, Any]] = None) -> None:
+        event = {"name": name, "timestamp": time.time()}
+        if attributes:
+            event["attributes"] = attributes
+        self.events.append(event)
+
+
+
+================================================
+FILE: .github/workflows/ci.yml
+================================================
+# In file: .github/workflows/ci.yml
+
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+
+    - name: Run Linters
+      run: |
+        black --check .
+        isort --check-only .
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        mypy . --ignore-missing-imports
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[test]"
+
+    - name: Run Tests
+      run: pytest -v -m "not requires_api" --cov=core --cov-report=term-missing
+
+
