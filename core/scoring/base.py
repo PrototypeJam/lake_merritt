@@ -1,7 +1,7 @@
 """Base scorer class definition."""
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Any, Dict
 
 from core.data_models import EvaluationItem, ScorerResult
 
@@ -24,4 +24,3 @@ class BaseScorer(ABC):
     @property
     def description(self) -> str:
         return f"{self.name} scorer"
-

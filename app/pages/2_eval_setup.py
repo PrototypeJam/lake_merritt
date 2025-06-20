@@ -2,19 +2,23 @@
 Page 2: Evaluation Setup - Data Upload and Scoring Configuration
 """
 
-import streamlit as st
-import pandas as pd
-from typing import List, Dict, Any
 import asyncio
-import nest_asyncio
+import logging
 from io import StringIO
+from typing import Any, Dict, List
 
-from core.ingestion import load_evaluation_data, validate_csv_columns
-from core.generation import generate_outputs
-from core.evaluation import run_evaluation_batch
+import nest_asyncio
+import pandas as pd
+import streamlit as st
+
 from core.data_models import EvaluationItem, EvaluationMode
+from core.evaluation import run_evaluation_batch
+from core.generation import generate_outputs
+from core.ingestion import load_evaluation_data, validate_csv_columns
 from core.scoring import get_available_scorers
 from services.llm_clients import create_llm_client
+
+logger = logging.getLogger(__name__)
 
 st.title("📄 Evaluation Setup")
 st.markdown("Upload data, configure evaluation mode, and select scoring methods.")
@@ -52,8 +56,8 @@ else:
     )
 
 uploaded_file = st.file_uploader(
-    "Choose a CSV file",
-    type="csv",
+    "Choose a CSV or JSON file",
+    type=["csv", "json"],
     help="Maximum file size: 200MB",
 )
 
@@ -66,42 +70,53 @@ if uploaded_file is not None:
         st.stop()
 
     try:
-        # Load and validate data
-        df = pd.read_csv(uploaded_file)
+        # Check file type and load accordingly
+        if uploaded_file.type == "application/json":
+            from core.otel.ingester import OTelTraceIngester
 
-        # Check for empty dataframe
-        if df.empty:
-            st.error(
-                "❌ The uploaded CSV file is empty. Please provide a file with data."
-            )
-            st.stop()
+            raw_str = uploaded_file.getvalue().decode("utf-8")
+            traces = OTelTraceIngester().ingest_str(raw_str)
+            st.session_state.eval_data = traces
+            st.success(f"✅ Loaded {len(traces)} OTel traces.")
+            with st.expander("Trace preview"):
+                st.json(traces[0].metadata["otel_trace"])
+        else:
+            # Load and validate CSV data
+            df = pd.read_csv(uploaded_file)
 
-        # Validate columns based on mode
-        required_cols = ["input", "expected_output"]
-        if mode == EvaluationMode.EVALUATE_EXISTING:
-            required_cols.append("output")
+            # Check for empty dataframe
+            if df.empty:
+                st.error(
+                    "❌ The uploaded CSV file is empty. Please provide a file with data."
+                )
+                st.stop()
 
-        is_valid, message = validate_csv_columns(df, required_cols)
+            # Validate columns based on mode
+            required_cols = ["input", "expected_output"]
+            if mode == EvaluationMode.EVALUATE_EXISTING:
+                required_cols.append("output")
 
-        if not is_valid:
-            st.error(f"❌ CSV Validation Failed: {message}")
-            st.info(
-                f"📋 Required columns for this mode: {', '.join([f'`{col}`' for col in required_cols])}"
-            )
-            st.info(
-                f"📄 Your file has: {', '.join([f'`{col}`' for col in df.columns.tolist()])}"
-            )
-            st.stop()
+            is_valid, message = validate_csv_columns(df, required_cols)
 
-        # Show data preview
-        st.success(f"✅ Loaded {len(df)} rows successfully!")
+            if not is_valid:
+                st.error(f"❌ CSV Validation Failed: {message}")
+                st.info(
+                    f"📋 Required columns for this mode: {', '.join([f'`{col}`' for col in required_cols])}"
+                )
+                st.info(
+                    f"📄 Your file has: {', '.join([f'`{col}`' for col in df.columns.tolist()])}"
+                )
+                st.stop()
 
-        with st.expander("📊 Data Preview (first 5 rows)"):
-            st.dataframe(df.head(), use_container_width=True)
+            # Show data preview
+            st.success(f"✅ Loaded {len(df)} rows successfully!")
 
-        # Convert to evaluation items
-        eval_items = load_evaluation_data(df, mode)
-        st.session_state.eval_data = eval_items
+            with st.expander("📊 Data Preview (first 5 rows)"):
+                st.dataframe(df.head(), use_container_width=True)
+
+            # Convert to evaluation items
+            eval_items = load_evaluation_data(df, mode)
+            st.session_state.eval_data = eval_items
 
     except pd.errors.EmptyDataError:
         st.error("❌ The uploaded file appears to be empty or corrupted.")

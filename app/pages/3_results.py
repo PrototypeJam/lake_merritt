@@ -2,10 +2,11 @@
 Page 3: View Evaluation Results
 """
 
-import streamlit as st
-import pandas as pd
 import json
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
+import pandas as pd
+import streamlit as st
 
 st.title("📊 Evaluation Results")
 st.markdown("Analyze evaluation outcomes and explore detailed scoring information.")
@@ -150,22 +151,33 @@ col1, col2 = st.columns([1, 1])
 with col1:
     st.markdown("### Input")
     st.text_area(
-        "", value=selected_item.input, height=150, disabled=True, key="detail_input"
+        "Input",
+        value=selected_item.input,
+        height=150,
+        disabled=True,
+        key="detail_input",
+        label_visibility="collapsed",
     )
 
     st.markdown("### Expected Output")
     st.text_area(
-        "",
+        "Expected Output",
         value=selected_item.expected_output,
         height=150,
         disabled=True,
         key="detail_expected",
+        label_visibility="collapsed",
     )
 
 with col2:
     st.markdown("### Actual Output")
     st.text_area(
-        "", value=selected_item.output, height=150, disabled=True, key="detail_output"
+        "Actual Output",
+        value=selected_item.output,
+        height=150,
+        disabled=True,
+        key="detail_output",
+        label_visibility="collapsed",
     )
 
     st.markdown("### Metadata")
@@ -198,6 +210,13 @@ for score in selected_item.scores:
                     st.json(score.details)
                 else:
                     st.write(score.details)
+
+# Add trace timeline for OTel traces
+if "otel_trace" in selected_item.metadata:
+    st.markdown("### Trace timeline")
+    for i, step in enumerate(selected_item.metadata["otel_trace"]["steps"]):
+        with st.expander(f"{i+1}. {step['stage']}", expanded=(i == 0)):
+            st.json({k: v for k, v in step.items() if k != "stage"})
 
 # Export Results Preview
 st.header("4. Results Summary")

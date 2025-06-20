@@ -2,13 +2,13 @@
 LLM-as-a-Judge scorer - uses an LLM to evaluate outputs.
 """
 
-import json
 import asyncio
+import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-from core.scoring.base import BaseScorer
 from core.data_models import EvaluationItem, ScorerResult
+from core.scoring.base import BaseScorer
 from services.llm_clients import create_llm_client
 
 logger = logging.getLogger(__name__)

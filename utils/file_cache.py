@@ -1,14 +1,15 @@
 """
 File-based caching for expensive operations.
 """
-import json
+
 import hashlib
-import os
-from pathlib import Path
-from typing import Any, Optional, Callable
-from datetime import datetime, timedelta
-import pickle
+import json
 import logging
+import os
+import pickle
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Callable, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -40,17 +41,17 @@ class FileCache:
             return None
 
         try:
-            with open(cache_path, 'rb') as f:
+            with open(cache_path, "rb") as f:
                 cache_data = pickle.load(f)
 
-            cached_time = datetime.fromisoformat(cache_data['timestamp'])
+            cached_time = datetime.fromisoformat(cache_data["timestamp"])
             if datetime.now() - cached_time > self.ttl:
                 logger.debug(f"Cache expired for key {cache_key}")
                 cache_path.unlink()
                 return None
 
             logger.debug(f"Cache hit for key {cache_key}")
-            return cache_data['value']
+            return cache_data["value"]
 
         except Exception as e:
             logger.error(f"Error reading cache: {e}")
@@ -62,13 +63,13 @@ class FileCache:
         cache_path = self._get_cache_path(cache_key)
 
         cache_data = {
-            'timestamp': datetime.now().isoformat(),
-            'value': value,
-            'key_data': key_data,
+            "timestamp": datetime.now().isoformat(),
+            "value": value,
+            "key_data": key_data,
         }
 
         try:
-            with open(cache_path, 'wb') as f:
+            with open(cache_path, "wb") as f:
                 pickle.dump(cache_data, f)
             logger.debug(f"Cached value for key {cache_key}")
         except Exception as e:
@@ -95,10 +96,10 @@ class FileCache:
         removed = 0
         for cache_file in self.cache_dir.glob("*.cache"):
             try:
-                with open(cache_file, 'rb') as f:
+                with open(cache_file, "rb") as f:
                     cache_data = pickle.load(f)
 
-                cached_time = datetime.fromisoformat(cache_data['timestamp'])
+                cached_time = datetime.fromisoformat(cache_data["timestamp"])
                 if datetime.now() - cached_time > self.ttl:
                     cache_file.unlink()
                     removed += 1
@@ -116,6 +117,7 @@ def cache_result(
     key_func: Optional[Callable] = None,
 ):
     """Decorator to cache function results."""
+
     def decorator(func):
         cache = FileCache(cache_dir, ttl_hours)
 
@@ -124,9 +126,9 @@ def cache_result(
                 key_data = key_func(*args, **kwargs)
             else:
                 key_data = {
-                    'func': func.__name__,
-                    'args': args,
-                    'kwargs': kwargs,
+                    "func": func.__name__,
+                    "args": args,
+                    "kwargs": kwargs,
                 }
 
             cached_value = cache.get(key_data)
@@ -142,9 +144,9 @@ def cache_result(
                 key_data = key_func(*args, **kwargs)
             else:
                 key_data = {
-                    'func': func.__name__,
-                    'args': args,
-                    'kwargs': kwargs,
+                    "func": func.__name__,
+                    "args": args,
+                    "kwargs": kwargs,
                 }
 
             cached_value = cache.get(key_data)
@@ -156,6 +158,7 @@ def cache_result(
             return result
 
         import asyncio
+
         return async_wrapper if asyncio.iscoroutinefunction(func) else wrapper
 
     return decorator

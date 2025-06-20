@@ -1,0 +1,1 @@
+# OTel trace ingestion module

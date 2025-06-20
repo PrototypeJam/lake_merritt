@@ -2,11 +2,12 @@
 Telemetry utilities for observability and monitoring.
 Currently provides stubs for future OpenTelemetry integration.
 """
+
 import logging
-from typing import Any, Dict, Optional, Callable
-from functools import wraps
-from contextlib import contextmanager
 import time
+from contextlib import contextmanager
+from functools import wraps
+from typing import Any, Callable, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,7 @@ def trace_function(
     attributes: Optional[Dict[str, Any]] = None,
 ):
     """Decorator to trace function execution."""
+
     def decorator(func):
         span_name = name or f"{func.__module__}.{func.__name__}"
 
@@ -69,6 +71,7 @@ def trace_function(
                 return await func(*args, **kwargs)
 
         import asyncio
+
         return async_wrapper if asyncio.iscoroutinefunction(func) else wrapper
 
     return decorator
@@ -90,7 +93,6 @@ def log_metric(
         metric_info["tags"] = tags
 
     logger.info(f"Metric: {metric_info}")
-
 
 
 def trace_llm_call(
@@ -123,7 +125,7 @@ def trace_llm_call(
             "llm.call.duration",
             duration,
             "seconds",
-            {"provider": provider, "model": model}
+            {"provider": provider, "model": model},
         )
 
     if input_tokens is not None:
@@ -131,7 +133,7 @@ def trace_llm_call(
             "llm.tokens.input",
             input_tokens,
             "tokens",
-            {"provider": provider, "model": model}
+            {"provider": provider, "model": model},
         )
 
     if output_tokens is not None:
@@ -139,7 +141,7 @@ def trace_llm_call(
             "llm.tokens.output",
             output_tokens,
             "tokens",
-            {"provider": provider, "model": model}
+            {"provider": provider, "model": model},
         )
 
 
@@ -173,7 +175,7 @@ class TelemetryContext:
                 "attributes": self.attributes,
                 "metrics": self.metrics,
                 "events": self.events,
-            }
+            },
         )
 
     def set_attribute(self, key: str, value: Any) -> None:
