@@ -27,7 +27,13 @@ import sys
 # Add the project root to Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from core.logging_config import setup_logging
+# Debug imports
+try:
+    from core.logging_config import setup_logging
+    print("✓ Core imports successful")
+except ImportError as e:
+    st.error(f"Import error: {e}")
+    raise
 
 # Set up logging first
 setup_logging()
