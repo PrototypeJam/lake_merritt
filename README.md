@@ -70,6 +70,7 @@ Navigate through the pages:
 
 ## Data Format
 
+### CSV Format
 For Mode A (evaluate existing outputs), your CSV should have:
 - `input`: The prompt/input given to the model
 - `output`: The model's actual output
@@ -80,6 +81,57 @@ For Mode B (generate then evaluate), your CSV needs only:
 - `input`: The prompt/input for the model
 - `expected_output`: The ideal/correct output
 
+### JSON Format (OpenTelemetry Traces)
+Upload JSON files containing OpenTelemetry trace data. The system automatically:
+- Extracts user goals and search summaries
+- Identifies generated and selected criteria
+- Creates evaluation items with metadata for scoring
+
+## Selecting and Configuring Scorers
+
+Lake Merritt provides multiple scoring methods that can be used individually or in combination:
+
+### Available Scorers
+
+1. **Exact Match** - Simple string comparison
+   - Basic: Exact string match (with whitespace normalization)
+   - Case Insensitive: Ignores case differences
+   - Normalized: Handles smart quotes, apostrophes, and optional trailing punctuation
+
+2. **Fuzzy Match** - Flexible string similarity
+   - Uses Levenshtein distance for similarity scoring
+   - Configurable threshold (default: 0.8)
+   - Good for outputs that may have minor variations
+
+3. **LLM Judge** - AI-powered evaluation
+   - Uses an LLM to evaluate output quality
+   - Configurable prompts and criteria
+   - Supports OpenAI, Anthropic, and Google models
+   - Provides reasoning for scores
+
+4. **Criteria Selection Judge** - Specialized for OTel traces
+   - Evaluates if selected criteria match user goals
+   - Analyzes search context and criteria quality
+   - Designed specifically for agent trace evaluation
+
+### How to Select Scorers
+
+1. Navigate to **Evaluation Setup**
+2. After uploading your data, you'll see the "Select Scoring Methods" section
+3. Check the boxes next to the scorers you want to use
+4. Click the gear icon ⚙️ next to each scorer to configure settings:
+   - **Threshold**: Minimum score to pass (0.0 to 1.0)
+   - **Model**: For LLM-based scorers, choose the AI model
+   - **Temperature**: Control randomness in LLM scoring
+   - **Custom prompts**: For LLM Judge, customize evaluation criteria
+
+### Scorer Recommendations
+
+- **For deterministic outputs**: Use Exact Match or Normalized Exact Match
+- **For creative outputs**: Use Fuzzy Match or LLM Judge
+- **For multiple valid answers**: Use LLM Judge with custom criteria
+- **For agent traces**: Use Criteria Selection Judge
+
 ## Architecture
 
 The project follows a modular architecture:
@@ -88,11 +140,73 @@ The project follows a modular architecture:
 - `services/`: External API integrations (LLM providers)
 - `utils/`: Helper utilities
 
-### Evaluating OpenTelemetry traces
-1. Go to **Evaluation Setup**.
-2. Upload `manual_traces.json` (or any JSON in the same schema).
-3. Select **Criteria Selection Judge** in the scorer picker.
-4. Run. Results will include an expandable timeline for each trace.
+### Evaluating OpenTelemetry Traces
+
+OpenTelemetry (OTel) trace evaluation is a unique feature that analyzes AI agent decision-making:
+
+#### What are OTel Traces?
+OpenTelemetry traces capture the execution flow of AI agents, including:
+- User goals and inputs
+- Search queries and results
+- Generated success criteria
+- Selected criteria for evaluation
+- Timing and metadata for each step
+
+#### How OTel Evaluation Works
+
+1. **Upload**: Go to **Evaluation Setup** and upload a JSON file containing OTel traces
+2. **Automatic Processing**: The OTel ingester:
+   - Extracts the user's goal from the trace
+   - Captures search summaries and context
+   - Identifies all generated criteria
+   - Records which criteria were selected
+   - Preserves timing and agent metadata
+
+3. **Scoring**: The **Criteria Selection Judge** scorer:
+   - Analyzes if selected criteria align with the user goal
+   - Considers the search context when evaluating
+   - Uses an LLM to provide nuanced scoring
+   - Returns a score (0-1) with detailed reasoning
+
+4. **Results**: View results includes:
+   - Standard scoring metrics
+   - Expandable trace timeline showing each step
+   - Detailed metadata for debugging
+   - Visual indicators for trace quality
+
+#### OTel Trace Format
+Your JSON should contain a `traces` array with objects following this structure:
+```json
+{
+  "traces": [{
+    "id": "trace_id",
+    "steps": [
+      {
+        "stage": "user_input",
+        "outputs": {"user_goal": "..."}
+      },
+      {
+        "stage": "search_complete", 
+        "outputs": {"search_summary": "..."}
+      },
+      {
+        "stage": "criteria_generation_complete",
+        "outputs": {"generated_criteria": [...]}
+      },
+      {
+        "stage": "criteria_evaluation_complete",
+        "outputs": {"selected_criteria": [...]}
+      }
+    ]
+  }]
+}
+```
+
+This feature is particularly useful for:
+- Evaluating AI agent decision quality
+- Understanding criteria selection reasoning
+- Debugging agent behavior
+- Ensuring agents stay aligned with user goals
 
 ## Contributing
 
