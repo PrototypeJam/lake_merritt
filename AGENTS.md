@@ -3,7 +3,7 @@
 ## Lake Merritt AI Evaluation Workbench
 
 ### Environment Setup
-This project requires Python 3.9+ and defines dependencies in `pyproject.toml`.
+This project requires Python 3.9+ (lately we run on python-3.13 actually) and defines dependencies in `pyproject.toml`.
 We use `uv` for fast, reliable dependency installation.
 
 ### Testing Guidelines
