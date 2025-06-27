@@ -1,61 +1,94 @@
 # [Lake Merritt](https://lakemerritt.streamlit.app/): AI Evaluation Workbench
 
-A general-purpose, modular, and extensible platform for evaluating AI models and applications, primarily Large Language Models (LLMs).
+A general-purpose, modular, and extensible platform for custom evaluations of AI models and applications.
 
 **NOTE:** Lake Merritt is currently in the midst of a [major upgrade to support Dev Packs](https://github.com/PrototypeJam/lake_merritt/blob/main/docs/dev-plan.md) as part of a [larger evolution roadmap](https://github.com/PrototypeJam/lake_merritt/wiki/Dev-Plan-for-Eval-Packs-Major-Uplift).
 
 ## Overview
 
-This platform provides a standardized yet flexible environment for:
-- Configuring evaluation parameters and models
-- Uploading evaluation datasets or generating model outputs
-- Applying multiple scoring methods (exact match, fuzzy match, LLM-as-a-Judge)
-- Analyzing results through intuitive visualizations
-- Comparing performance across different models and configurations
+Lake Merritt provides a standardized yet flexible environment for evaluating AI systems. With its new **Eval Pack** architecture, you can run everything from quick, simple comparisons using a spreadsheet to complex, multi-stage evaluation pipelines defined in a single configuration file.
+
+The platform is designed for:
+- **Rapid Prototyping**: Get feedback on your model with a simple CSV upload and a few clicks.
+- **Customizable Evaluation**: Define bespoke evaluation logic using YAML "Eval Packs" to test for specific behaviors, tool usage, and more.
+- **Repeatable & Shareable Workflows**: Codify your evaluation strategy in a version-controllable file that can be shared and reused.
+- **Deep Analysis**: Analyze results through intuitive visualizations and detailed data exports.
+
+## Getting Started: Two Paths to Evaluation
+
+Lake Merritt now offers two distinct workflows, allowing you to choose the level of complexity that fits your needs.
+
+### Path 1: The Manual Workflow (For Quick Tests)
+
+This is the fastest way to get started. If you have a simple CSV file, you can upload it and configure scorers directly in the user interface. It's perfect for quick checks and initial exploration.
+
+1.  **Prepare Your Data**: Create a CSV file with `input`, `output`, and `expected_output` columns.
+2.  **Navigate to "Evaluation Setup"**: Select the **"Configure Manually"** option.
+3.  **Upload & Select**: Upload your CSV and choose from a list of built-in scorers (Exact Match, Fuzzy Match, LLM Judge).
+4.  **Run**: Click "Start Evaluation" to see your results.
+
+### Path 2: The Eval Pack Workflow (For Power and Repeatability)
+
+This is the new, powerful way to use Lake Merritt. An **Eval Pack** is a YAML file where you declaratively define the entire evaluation process: from data ingestion to a multi-stage scoring pipeline.
+
+This is the recommended path for any serious or recurring evaluation task.
+
+1.  **Create an Eval Pack**: Define your data source, scorers, and configurations in a `.yaml` file.
+2.  **Navigate to "Evaluation Setup"**: Select the **"Upload Eval Pack"** option.
+3.  **Upload Pack & Data**: Upload your Eval Pack, then upload the corresponding data file (e.g., a CSV, a JSON trace file, etc.).
+4.  **Run**: Click "Start Pack Evaluation" to execute your custom workflow.
 
 ## Features
 
-### Current (v0)
-- **Mode A**: Evaluate existing model outputs against expected outputs
-- **Mode B**: Generate outputs from an Actor LLM, then evaluate
-- Multiple scoring methods with configurable parameters
-- Streamlit-based UI with session state management
-- Support for CSV data import/export
-- Modular architecture for easy extension
+### Current Features (v1.0)
+- **Dual-Mode UI**: Choose between a simple manual setup or the powerful Eval Pack workflow.
+- **Eval Pack Engine**: Define and run custom, multi-stage evaluation pipelines from a single YAML file.
+- **Flexible Data Ingestion**: Built-in support for CSVs, JSON, and standard **OpenTelemetry / OpenInference** trace formats. The architecture is extensible for new formats.
+- **Rich Scorer Library**:
+    - **Exact & Fuzzy Match**: For deterministic and near-match checks.
+    - **LLM-as-a-Judge**: Use powerful models (GPT, Claude, Gemini) to score for quality and nuance.
+    - **Trace-Specific Scorers**: Evaluate AI agent behavior with scorers like `CriteriaSelectionJudge` and `ToolUsageScorer`.
+- **Mode B Generation**: For datasets without outputs, you can configure an "Actor LLM" to generate them before the evaluation pipeline runs.
+- **Modular & Extensible**: A registry-based architecture allows for easy addition of custom scorers and ingesters.
 
 ### Planned
 - Cross-run analysis and comparison
-- Live system monitoring via OpenTelemetry
-- Enhanced LLM-as-a-Judge configuration
-- Prompt versioning and management
+- Live system monitoring via OpenTelemetry integration
+- Custom report generation from templates
+- UI-driven Eval Pack creation and editing
 
 ## Installation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/ai-eval-workbench.git
-cd ai-eval-workbench
-```
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/PrototypeJam/lake_merritt.git
+    cd lake_merritt
+    ```
 
-2. Create a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+2.  Create a virtual environment:
+    ```bash
+    # Using uv (recommended)
+    uv venv
+    source .venv/bin/activate
 
-3. Install dependencies:
-```bash
-# For development (includes testing and linting tools):
-pip install -e ".[test,dev]"
+    # Using standard venv
+    # python -m venv venv
+    # source venv/bin/activate
+    ```
 
-# For standard installation:
-pip install .
-```
+3.  Install dependencies:
+    ```bash
+    # For development (includes testing and linting tools)
+    uv pip install -e ".[test,dev]"
 
-4. Copy `.env.template` to `.env` and add your API keys:
-```bash
-cp .env.template .env
-```
+    # For standard installation
+    # uv pip install .
+    ```
+
+4.  Copy `.env.template` to `.env` and add your API keys:
+    ```bash
+    cp .env.template .env
+    ```
 
 ## Usage
 
@@ -63,175 +96,87 @@ Run the Streamlit app:
 ```bash
 streamlit run streamlit_app.py
 ```
+Navigate to the "Evaluation Setup" page to begin.
 
-Navigate through the pages:
-1. **System Configuration**: Set up API keys and default model parameters
-2. **Evaluation Setup**: Upload data, select scoring methods, and run evaluations
-3. **View Results**: Analyze evaluation outcomes and detailed scores
-4. **Download Center**: Export results in various formats
+## Using Eval Packs
 
-## Data Format
+The Eval Pack system is the most powerful feature of Lake Merritt. It turns your evaluation logic into a shareable, version-controllable artifact.
 
-### CSV Format
-For Mode A (evaluate existing outputs), your CSV should have:
-- `input`: The prompt/input given to the model
-- `output`: The model's actual output
-- `expected_output`: The ideal/correct output
-- `id` (optional): Unique identifier for each row
+### What is an Eval Pack?
 
-For Mode B (generate then evaluate), your CSV needs only:
-- `input`: The prompt/input for the model
-- `expected_output`: The ideal/correct output
+It's a YAML file that defines your entire evaluation. Here is a simple example that ingests a CSV and runs two scorers:
 
-### JSON Format (OpenTelemetry Traces)
-Upload JSON files containing OpenTelemetry trace data. The system automatically:
-- Extracts user goals and search summaries
-- Identifies generated and selected criteria
-- Creates evaluation items with metadata for scoring
+**`basic_csv_eval.yaml`**
+```yaml
+schema_version: "1.0"
+name: "Basic CSV Two-Scorer Test"
+version: "1.0"
+description: "A simple pack to test the CSV ingester and a multi-stage pipeline."
 
-## Selecting and Configuring Scorers
+ingestion:
+  type: "csv"
+  config:
+    mode: "evaluate_existing"
 
-Lake Merritt provides multiple scoring methods that can be used individually or in combination:
+pipeline:
+  - name: "strict_check"
+    scorer: "exact_match"
+    
+  - name: "flexible_check"
+    scorer: "fuzzy_match"
+    config:
+      threshold: 0.8
+```
 
-### Available Scorers
+### Data Ingestion with Eval Packs
 
-1. **Exact Match** - Simple string comparison
-   - Basic: Exact string match (with whitespace normalization)
-   - Case Insensitive: Ignores case differences
-   - Normalized: Handles smart quotes, apostrophes, and optional trailing punctuation
+The pack defines how to interpret your data. The `ingestion` block specifies the `type` of ingester to use, such as:
+- **`csv`**: For standard CSV files.
+- **`json`**: For simple JSON data.
+- **`generic_otel`**: For standard OpenTelemetry trace files (JSON or Protobuf).
+- **`openinference`**: For traces adhering to the OpenInference semantic conventions.
 
-2. **Fuzzy Match** - Flexible string similarity
-   - Uses Levenshtein distance for similarity scoring
-   - Configurable threshold (default: 0.8)
-   - Good for outputs that may have minor variations
-
-3. **LLM Judge** - AI-powered evaluation
-   - Uses an LLM to evaluate output quality
-   - Configurable prompts and criteria
-   - Supports OpenAI, Anthropic, and Google models
-   - Provides reasoning for scores
-
-4. **Criteria Selection Judge** - Specialized for OTel traces
-   - Evaluates if selected criteria match user goals
-   - Analyzes search context and criteria quality
-   - Designed specifically for agent trace evaluation
-
-### How to Select Scorers
-
-1. Navigate to **Evaluation Setup**
-2. After uploading your data, you'll see the "Select Scoring Methods" section
-3. Check the boxes next to the scorers you want to use
-4. Click the gear icon ⚙️ next to each scorer to configure settings:
-   - **Threshold**: Minimum score to pass (0.0 to 1.0)
-   - **Model**: For LLM-based scorers, choose the AI model
-   - **Temperature**: Control randomness in LLM scoring
-   - **Custom prompts**: For LLM Judge, customize evaluation criteria
-
-### Scorer Recommendations
-
-- **For deterministic outputs**: Use Exact Match or Normalized Exact Match
-- **For creative outputs**: Use Fuzzy Match or LLM Judge
-- **For multiple valid answers**: Use LLM Judge with custom criteria
-- **For agent traces**: Use Criteria Selection Judge
+This makes the system incredibly flexible—to support a new data format, you simply need to add a new ingester and reference it in your pack.
 
 ## Architecture
 
-The project follows a modular architecture:
-- `app/`: Streamlit UI layer
-- `core/`: Business logic and evaluation orchestration
-  - `eval_pack/`: Eval Pack engine and loader
-  - `ingestion/`: Data ingestion modules for various formats
-  - `scoring/`: Scorer implementations
-  - `utils/`: Core utility functions
-- `services/`: External API integrations (LLM providers)
-- `utils/`: Helper utilities
-- `eval_packs/`: Eval Pack definitions and resources
-  - `examples/`: Example eval pack configurations
-  - `schemas/`: Schema definitions for eval packs
-  - `templates/`: Report templates for custom reporting
-- `workspaces/`: Isolated environments for custom eval packs
-  - `default/`: Default workspace for general use
-  - `_shared/`: Shared resources across workspaces
-- `tests/`: Test suite
-  - `unit/`: Unit tests
-  - `integration/`: Integration tests
-  - `eval_packs/`: Eval pack specific tests
+The project follows a modular, extensible architecture designed around Eval Packs.
 
-### Evaluating OpenTelemetry Traces
+- `app/`: Streamlit UI layer.
+- `core/`: Business logic and evaluation orchestration.
+  - **`eval_pack/`**: The core Eval Pack engine, loader, and schema definitions.
+  - **`ingestion/`**: Data ingestion modules for various formats (CSV, JSON, OTel, etc.).
+  - **`scoring/`**: Implementations for all scorers (`ExactMatch`, `LLMJudge`, etc.).
+  - `utils/`: Core utility functions.
+- `services/`: External API integrations (e.g., LLM providers).
+- **`eval_packs/`**: A directory for storing reusable Eval Pack definitions.
+  - `examples/`: Example pack configurations to get you started.
+- `workspaces/`: (Coming Soon) Isolated environments for custom packs and components.
+- `tests/`: A comprehensive test suite for all components.
 
-OpenTelemetry (OTel) trace evaluation is a unique feature that analyzes AI agent decision-making:
+## Advanced Use Case: Evaluating OpenTelemetry Traces
 
-#### What are OTel Traces?
-OpenTelemetry traces capture the execution flow of AI agents, including:
-- User goals and inputs
-- Search queries and results
-- Generated success criteria
-- Selected criteria for evaluation
-- Timing and metadata for each step
+Evaluating the complex behavior of AI agents is a primary use case for Lake Merritt. Instead of simple input/output pairs, you can evaluate an agent's entire decision-making process captured in an OpenTelemetry trace.
 
-#### How OTel Evaluation Works
+#### How it Works with Eval Packs
 
-1. **Upload**: Go to **Evaluation Setup** and upload a JSON file containing OTel traces
-2. **Automatic Processing**: The OTel ingester:
-   - Extracts the user's goal from the trace
-   - Captures search summaries and context
-   - Identifies all generated criteria
-   - Records which criteria were selected
-   - Preserves timing and agent metadata
+1.  **Capture Traces**: Instrument your AI agent to produce standard OpenTelemetry traces, preferably using the [OpenInference](https://openinference.io/) semantic conventions.
+2.  **Create an Eval Pack**: Write a pack that specifies an OTel-compatible ingester (`openinference` or `generic_otel`).
+3.  **Define a Pipeline**: Add stages that use trace-aware scorers like `ToolUsageScorer` or `LLMJudgeScorer` to evaluate aspects like:
+    - Did the agent use the correct tool?
+    - Was the agent's final response consistent with its retrieved context?
+    - Did the agent follow its instructions?
+4.  **Run in the UI**: Upload your pack and your trace file (e.g., `traces.json`) to run the evaluation.
 
-3. **Scoring**: The **Criteria Selection Judge** scorer:
-   - Analyzes if selected criteria align with the user goal
-   - Considers the search context when evaluating
-   - Uses an LLM to provide nuanced scoring
-   - Returns a score (0-1) with detailed reasoning
-
-4. **Results**: View results includes:
-   - Standard scoring metrics
-   - Expandable trace timeline showing each step
-   - Detailed metadata for debugging
-   - Visual indicators for trace quality
-
-#### OTel Trace Format
-Your JSON should contain a `traces` array with objects following this structure:
-```json
-{
-  "traces": [{
-    "id": "trace_id",
-    "steps": [
-      {
-        "stage": "user_input",
-        "outputs": {"user_goal": "..."}
-      },
-      {
-        "stage": "search_complete", 
-        "outputs": {"search_summary": "..."}
-      },
-      {
-        "stage": "criteria_generation_complete",
-        "outputs": {"generated_criteria": [...]}
-      },
-      {
-        "stage": "criteria_evaluation_complete",
-        "outputs": {"selected_criteria": [...]}
-      }
-    ]
-  }]
-}
-```
-
-This feature is particularly useful for:
-- Evaluating AI agent decision quality
-- Understanding criteria selection reasoning
-- Debugging agent behavior
-- Ensuring agents stay aligned with user goals
+This workflow provides a powerful, repeatable method for ensuring your AI agents behave as expected.
 
 ## Contributing
 
 This project emphasizes deep modularity. When adding new features:
-1. Scorers go in `core/scoring/`
-2. LLM providers extend `services/llm_clients.py`
-3. UI pages go in `app/pages/`
-4. All data structures should be defined as Pydantic models in `core/data_models.py`
+1.  Scorers go in `core/scoring/` and inherit from `BaseScorer`.
+2.  Ingesters go in `core/ingestion/` and inherit from `BaseIngester`.
+3.  Register new components in `core/registry.py` to make them available to the Eval Pack engine.
+4.  All data structures should be defined as Pydantic models in `core/data_models.py`.
 
 ## License
 
