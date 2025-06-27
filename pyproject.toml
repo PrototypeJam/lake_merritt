@@ -29,6 +29,7 @@ dependencies = [
     "openinference-semantic-conventions~=0.1.21",
     "opentelemetry-proto>=1.0",
     "protobuf>=4.0",
+    "pyyaml>=6.0.0",
 ]
 
 [project.optional-dependencies]
