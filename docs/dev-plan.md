@@ -32,6 +32,15 @@ After evaluating multiple architectural options, we've chosen a phased approach 
 2.  **Backward Compatibility**: Existing workflows continue unchanged
 3.  **Progressive Enhancement**: Start simple, add power over time
 
+**Workflow note (June 2025)**  
+  The branch **`feature/eval-pack-architecture`** already exists and was
+  created manually by a maintainer with write permission.  
+  • Codex will commit and push only to that branch.  
+  • After local testing in VS Code, open a PR from  
+    `feature/eval-pack-architecture` → `main` for review.  
+  • No other branches will be created by Codex.
+
+
 ### Considered Alternatives
 
 We evaluated three main approaches:
@@ -67,7 +76,8 @@ Establish the fundamental structure and contracts that all subsequent work will 
 
 ```bash
 # Create branch and directories
-git checkout -b feature/eval-pack-architecture
+git switch feature/eval-pack-architecture   # branch was created manually
+git pull 
 mkdir -p eval_packs/{examples,schemas,templates}
 mkdir -p workspaces/{default,_shared}
 mkdir -p core/eval_pack
