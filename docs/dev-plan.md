@@ -645,7 +645,7 @@ class PipelineExecutor:
 - Securely provides API keys to scorers that require them.
 - Respects the `span_kind` filter in pipeline stages.
 
-#### 1.4 Refactor Built-in Scorers
+#### DONE- 1.4 Refactor Built-in Scorers
 
 **Technical Specifications:**
 Refactor all existing scorers to return the new `ScorerResult` model defined in Task 0.2b and to set the `requires_api_key` flag where necessary. This is a critical step to prevent `ValidationError` exceptions at runtime. This task involves replacing the old `ScorerResult` implementation with the new one from Task 0.2b in `core/data_models.py` and then updating **every single scorer** in `core/scoring/` to conform to the new model's contract. Below is the representative implementation for `ExactMatchScorer` and `LLMJudgeScorer`. This pattern must be applied to all other built-in scorers.
