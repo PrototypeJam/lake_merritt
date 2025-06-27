@@ -5,10 +5,12 @@ Main evaluation orchestrator that coordinates the evaluation process.
 import asyncio
 import logging
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from core.data_models import (EvaluationItem, EvaluationResults, RunMetadata,
                               ScorerConfig)
+from core.eval_pack import (EvalPackV1, PipelineExecutor, create_legacy_pack,
+                            extract_scorer_configs, extract_selected_scorers)
 from core.scoring import create_scorer, get_available_scorers
 
 logger = logging.getLogger(__name__)
@@ -16,213 +18,154 @@ logger = logging.getLogger(__name__)
 
 async def run_evaluation(
     items: List[EvaluationItem],
-    selected_scorers: List[str],
-    scorer_configs: Dict[str, Dict[str, Any]],
-    api_keys: Dict[str, str],
+    selected_scorers: Optional[List[str]] = None,
+    scorer_configs: Optional[Dict[str, Dict[str, Any]]] = None,
+    api_keys: Optional[Dict[str, str]] = None,
     progress_callback: Optional[Callable[[int, int], None]] = None,
+    pack: Optional[Union[EvalPackV1, Dict[str, Any]]] = None,
 ) -> EvaluationResults:
     """
     Run evaluation on a list of items using selected scorers.
 
+    This function supports both legacy scorer-based evaluation and the new
+    pack-based approach. If a pack is provided, it will be used directly.
+    Otherwise, a legacy pack will be created from the provided scorers.
+
     Args:
         items: List of evaluation items
-        selected_scorers: Names of scorers to use
-        scorer_configs: Configuration for each scorer
+        selected_scorers: Names of scorers to use (required if pack not provided)
+        scorer_configs: Configuration for each scorer (required if pack not provided)
         api_keys: API keys for LLM providers
         progress_callback: Optional callback for progress updates
+        pack: Optional Eval Pack to use (can be EvalPackV1 or dict)
+
+    Returns:
+        EvaluationResults object containing all results and statistics
+    """
+    # Delegate to run_evaluation_batch with batch_size=1 for simplicity
+    # This ensures consistent behavior between both functions
+    return await run_evaluation_batch(
+        items=items,
+        selected_scorers=selected_scorers,
+        scorer_configs=scorer_configs,
+        api_keys=api_keys,
+        batch_size=1,  # Process items one at a time
+        progress_callback=progress_callback,
+        pack=pack,
+    )
+
+
+async def run_evaluation_batch(
+    items: List[EvaluationItem],
+    selected_scorers: Optional[List[str]] = None,
+    scorer_configs: Optional[Dict[str, Dict[str, Any]]] = None,
+    api_keys: Optional[Dict[str, str]] = None,
+    batch_size: int = 10,
+    progress_callback: Optional[Callable[[int, int], None]] = None,
+    pack: Optional[Union[EvalPackV1, Dict[str, Any]]] = None,
+) -> EvaluationResults:
+    """
+    Run evaluation in batches for better performance with async scorers.
+
+    This function supports both legacy scorer-based evaluation and the new
+    pack-based approach. If a pack is provided, it will be used directly.
+    Otherwise, a legacy pack will be created from the provided scorers.
+
+    Args:
+        items: List of evaluation items
+        selected_scorers: Names of scorers to use (required if pack not provided)
+        scorer_configs: Configuration for each scorer (required if pack not provided)
+        api_keys: API keys for LLM providers
+        batch_size: Number of items to process in parallel
+        progress_callback: Optional callback for progress updates
+        pack: Optional Eval Pack to use (can be EvalPackV1 or dict)
 
     Returns:
         EvaluationResults object containing all results and statistics
     """
     start_time = datetime.now()
+    
+    # Handle pack parameter
+    eval_pack = None
+    if pack is not None:
+        # If pack is a dict, convert it to EvalPackV1
+        if isinstance(pack, dict):
+            from core.eval_pack.loader import EvalPackLoader
+            loader = EvalPackLoader()
+            eval_pack, errors = loader.load(pack)
+            if errors:
+                logger.error(f"Errors loading pack: {errors}")
+                raise ValueError(f"Invalid pack configuration: {errors}")
+        else:
+            eval_pack = pack
+    else:
+        # Create legacy pack from scorer selections
+        if not selected_scorers:
+            raise ValueError("Either 'pack' or 'selected_scorers' must be provided")
+        
+        api_keys = api_keys or {}
+        scorer_configs = scorer_configs or {}
+        
+        eval_pack = create_legacy_pack(
+            selected_scorers=selected_scorers,
+            scorer_configs=scorer_configs,
+            api_keys=api_keys,
+            items=items,
+        )
+    
     logger.info(
-        f"Starting evaluation with {len(items)} items and {len(selected_scorers)} scorers"
+        f"Starting pack-based evaluation with {len(items)} items, "
+        f"batch size {batch_size}, pack: {eval_pack.name}"
     )
-
-    # Create scorer instances
-    scorers = {}
-    for scorer_name in selected_scorers:
-        config = scorer_configs.get(scorer_name, {})
-        # Add API keys to config if needed
-        if scorer_name == "llm_judge" and "api_key" not in config:
-            provider = config.get("provider", "openai")
-            config["api_key"] = api_keys.get(provider)
-
-        try:
-            scorer = create_scorer(scorer_name, config)
-            scorers[scorer_name] = scorer
-            logger.info(f"Created scorer: {scorer_name}")
-        except Exception as e:
-            logger.error(f"Failed to create scorer {scorer_name}: {e}")
-            raise
-
-    # Process each item
-    total_operations = len(items) * len(scorers)
-    completed_operations = 0
-
-    for item_idx, item in enumerate(items):
-        # Clear existing scores
-        item.scores = []
-
-        # Apply each scorer
-        for scorer_name, scorer in scorers.items():
-            try:
-                # Run scorer
-                if asyncio.iscoroutinefunction(scorer.score):
-                    result = await scorer.score(item)
-                else:
-                    result = scorer.score(item)
-
-                item.scores.append(result)
-                logger.debug(
-                    f"Scored item {item_idx} with {scorer_name}: {result.score}"
-                )
-
-            except Exception as e:
-                logger.error(f"Error scoring item {item_idx} with {scorer_name}: {e}")
-                # Add error result
-                from core.data_models import ScorerResult
-
-                item.scores.append(
-                    ScorerResult(
-                        scorer_name=scorer_name,
-                        score=0.0,
-                        passed=False,
-                        error=str(e),
-                    )
-                )
-
-            # Update progress
-            completed_operations += 1
-            if progress_callback:
-                progress_callback(completed_operations, total_operations)
-
-    # Create results object
-    end_time = datetime.now()
-    duration = (end_time - start_time).total_seconds()
-
-    results = EvaluationResults(
+    
+    # Create and initialize pipeline executor
+    executor = PipelineExecutor(eval_pack)
+    await executor.initialize(api_keys)
+    
+    # Run the pipeline
+    processed_items = await executor.run_batch(
         items=items,
-        config={
-            "scorers": selected_scorers,
-            "scorer_configs": scorer_configs,
-            "timestamp": start_time.isoformat(),
-            "duration_seconds": duration,
-        },
-        metadata={
-            "mode": "evaluate_existing",  # Will be updated by caller if different
-            "timestamp": start_time.isoformat(),
-            "duration_seconds": duration,
-            "total_items": len(items),
-            "total_scorers": len(scorers),
-        },
+        batch_size=batch_size,
+        progress_callback=progress_callback,
     )
-
-    # Calculate summary statistics
-    results.calculate_summary_stats()
-
-    logger.info(f"Evaluation completed in {duration:.2f} seconds")
-    return results
-
-
-async def run_evaluation_batch(
-    items: List[EvaluationItem],
-    selected_scorers: List[str],
-    scorer_configs: Dict[str, Dict[str, Any]],
-    api_keys: Dict[str, str],
-    batch_size: int = 10,
-    progress_callback: Optional[Callable[[int, int], None]] = None,
-) -> EvaluationResults:
-    """
-    Run evaluation in batches for better performance with async scorers.
-
-    This is an optimized version that processes items in batches,
-    particularly useful for LLM-based scorers.
-    """
-    start_time = datetime.now()
-    logger.info(
-        f"Starting batch evaluation with {len(items)} items, batch size {batch_size}"
-    )
-
-    # Create scorer instances
-    scorers = {}
-    for scorer_name in selected_scorers:
-        config = scorer_configs.get(scorer_name, {})
-        # Add API key for LLM-based scorers
-        if (
-            scorer_name in ["llm_judge", "criteria_selection_judge"]
-            and "api_key" not in config
-        ):
-            provider = config.get("provider", "openai")
-            config["api_key"] = api_keys.get(provider)
-
-        scorers[scorer_name] = create_scorer(scorer_name, config)
-
-    # Process in batches
-    total_operations = len(items) * len(scorers)
-    completed_operations = 0
-
-    for i in range(0, len(items), batch_size):
-        batch = items[i : i + batch_size]
-
-        # Create tasks for this batch
-        tasks = []
-        for item in batch:
-            item.scores = []
-            for scorer_name, scorer in scorers.items():
-                if asyncio.iscoroutinefunction(scorer.score):
-                    task = scorer.score(item)
-                else:
-                    # Wrap sync function in coroutine
-                    task = asyncio.create_task(asyncio.to_thread(scorer.score, item))
-                tasks.append((item, scorer_name, task))
-
-        # Wait for batch to complete
-        for item, scorer_name, task in tasks:
-            try:
-                result = await task
-                item.scores.append(result)
-            except Exception as e:
-                logger.error(f"Error in batch scoring: {e}")
-                from core.data_models import ScorerResult
-
-                item.scores.append(
-                    ScorerResult(
-                        scorer_name=scorer_name,
-                        score=0.0,
-                        passed=False,
-                        error=str(e),
-                    )
-                )
-
-            completed_operations += 1
-            if progress_callback:
-                progress_callback(completed_operations, total_operations)
-
+    
+    # Extract configuration for results
+    if eval_pack.metadata.get("source") == "legacy_ui":
+        # Use legacy format for backward compatibility
+        selected_scorers = extract_selected_scorers(eval_pack)
+        scorer_configs = extract_scorer_configs(eval_pack)
+    else:
+        # Use pack-based format
+        selected_scorers = [stage.scorer for stage in eval_pack.pipeline]
+        scorer_configs = {stage.scorer: stage.config for stage in eval_pack.pipeline}
+    
     # Create results
     end_time = datetime.now()
     duration = (end_time - start_time).total_seconds()
-
+    
     results = EvaluationResults(
-        items=items,
+        items=processed_items,
         config={
             "scorers": selected_scorers,
             "scorer_configs": scorer_configs,
             "timestamp": start_time.isoformat(),
             "duration_seconds": duration,
             "batch_size": batch_size,
+            "pack_name": eval_pack.name,
+            "pack_version": eval_pack.version,
         },
         metadata={
             "mode": "evaluate_existing",
             "timestamp": start_time.isoformat(),
             "duration_seconds": duration,
             "total_items": len(items),
-            "total_scorers": len(scorers),
+            "total_scorers": len(eval_pack.pipeline),
             "batch_size": batch_size,
+            "pack_based": True,
         },
     )
-
+    
     results.calculate_summary_stats()
-
-    logger.info(f"Batch evaluation completed in {duration:.2f} seconds")
+    
+    logger.info(f"Pack-based evaluation completed in {duration:.2f} seconds")
     return results
