@@ -912,6 +912,24 @@ results = loop.run_until_complete(
 *   Running a CSV-based evaluation through the "manual configuration" UI flow continues to work without error.
 *   The application no longer pre-processes the uploaded file into `EvaluationItem` objects in the UI; this logic is now fully delegated to the `core` module.
 
+#### UPDATE on Task 1.6
+
+#### 1.6 Update UI Binding to New `run_evaluation_batch`
+
+> **IMPLEMENTATION NOTE (Discovered during testing):**
+>
+> The initial refactoring of this page to call the new `run_evaluation_batch` function inadvertently broke the backward-compatible manual workflow. The root cause was that obsolete data validation and ingestion logic (e.g., calls to the deleted `validate_csv_columns`) were not fully removed from the UI page, leading to an `ImportError`.
+>
+> The final, correct implementation of this task involved a more significant rewrite of `app/pages/2_eval_setup.py` to:
+>
+> 1.  Completely remove all data validation and ingestion logic from the UI layer.
+> 2.  Preserve the full UI for both "Mode A" (Evaluate Existing) and "Mode B" (Generate then Evaluate).
+> 3.  For "Mode A", the UI now passes the raw, uploaded file object directly to the `run_evaluation_batch` function.
+> 4.  For "Mode B", the UI first ingests the data to run the `generate_outputs` function, and then passes the resulting list of generated items to `run_evaluation_batch`.
+>
+> This corrected approach successfully restores full backward compatibility for the manual UI while properly delegating responsibilities to the new core engine.
+---
+
 ## Phase 1a: OpenInference Migration (Small - 5-7 days)
 
 ### Context
