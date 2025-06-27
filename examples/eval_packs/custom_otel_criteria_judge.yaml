@@ -1,0 +1,45 @@
+# Custom OTEL Criteria Selection Judge
+# This example shows evaluation of criteria selection in OTEL traces
+
+schema_version: "1.0"
+name: "OTEL Criteria Selection Evaluation"
+version: "1.0"
+description: "Evaluates criteria selection quality in OpenTelemetry traces using specialized judge"
+author: "Lake Merritt Team"
+
+ingestion:
+  type: "otel"  # Uses the existing OTelTraceIngester
+  parser: "openinference_json"
+  config:
+    # Config passed to the specific ingester
+
+pipeline:
+  - name: "Criteria Selection Quality"
+    scorer: "criteria_selection_judge"
+    config:
+      model: "gpt-4"
+      temperature: 0.0
+      min_criteria: 3
+      max_criteria: 7
+      check_relevance: true
+      check_diversity: true
+      threshold: 0.75
+    on_fail: "continue"
+  
+  - name: "Tool Usage Validation"
+    scorer: "tool_usage"
+    config:
+      required_tools: ["criteria_generator", "criteria_evaluator"]
+      check_sequence: true
+      expected_sequence: ["search", "criteria_generator", "criteria_evaluator"]
+    on_fail: "continue"
+
+reporting:
+  format: "markdown"
+  template: "criteria_analysis"
+
+metadata:
+  tags: ["otel", "criteria", "selection", "specialized", "example"]
+  difficulty: "advanced"
+  domain: "criteria_selection"
+  trace_source: "manual_traces.json"

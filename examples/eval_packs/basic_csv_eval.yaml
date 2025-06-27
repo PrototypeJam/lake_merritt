@@ -1,0 +1,34 @@
+# Basic CSV Evaluation Pack
+# This example shows how to evaluate a CSV file with exact match and fuzzy match scoring
+
+schema_version: "1.0"
+name: "Basic CSV Evaluation"
+version: "1.0"
+description: "Simple evaluation pack for CSV data with basic scorers"
+author: "Lake Merritt Team"
+
+ingestion:
+  type: "csv"
+  config:
+    mode: "evaluate_existing"  # expects 'output' column in CSV
+
+pipeline:
+  - name: "Exact Match Check"
+    scorer: "exact_match"
+    config:
+      case_sensitive: false
+      normalize_whitespace: true
+    on_fail: "continue"
+  
+  - name: "Fuzzy Match Check"
+    scorer: "fuzzy_match"
+    config:
+      threshold: 0.8
+    on_fail: "continue"
+
+reporting:
+  format: "markdown"
+
+metadata:
+  tags: ["csv", "basic", "example"]
+  difficulty: "beginner"

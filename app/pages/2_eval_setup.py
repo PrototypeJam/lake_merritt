@@ -14,7 +14,7 @@ import streamlit as st
 from core.data_models import EvaluationItem, EvaluationMode
 from core.evaluation import run_evaluation_batch
 from core.generation import generate_outputs
-from core.ingestion import load_evaluation_data, validate_csv_columns
+from core.ingestion import validate_csv_columns
 from core.scoring import get_available_scorers
 from services.llm_clients import create_llm_client
 
@@ -114,9 +114,9 @@ if uploaded_file is not None:
             with st.expander("📊 Data Preview (first 5 rows)"):
                 st.dataframe(df.head(), use_container_width=True)
 
-            # Convert to evaluation items
-            eval_items = load_evaluation_data(df, mode)
-            st.session_state.eval_data = eval_items
+            # Store the DataFrame and mode for later use
+            st.session_state.eval_data = df
+            st.session_state.eval_mode = mode
 
     except pd.errors.EmptyDataError:
         st.error("❌ The uploaded file appears to be empty or corrupted.")
@@ -140,7 +140,7 @@ if uploaded_file is not None:
         st.stop()
 
 # Mode B: Actor Model Configuration
-if mode == EvaluationMode.GENERATE_THEN_EVALUATE and st.session_state.eval_data:
+if mode == EvaluationMode.GENERATE_THEN_EVALUATE and "eval_data" in st.session_state:
     st.header("3. Configure Actor Model")
     st.markdown("Select the model that will generate outputs for your inputs.")
 
@@ -213,10 +213,15 @@ if mode == EvaluationMode.GENERATE_THEN_EVALUATE and st.session_state.eval_data:
             }
 
             try:
+                # Convert DataFrame to EvaluationItems for generation
+                from core.ingestion import CSVIngester
+                ingester = CSVIngester()
+                eval_items = ingester.ingest(st.session_state.eval_data, {"mode": mode.value})
+                
                 # Run generation
                 updated_items = asyncio.run(
                     generate_outputs(
-                        st.session_state.eval_data,
+                        eval_items,
                         actor_config,
                         progress_callback=lambda i, total: (
                             progress_bar.progress(i / total),
@@ -225,7 +230,12 @@ if mode == EvaluationMode.GENERATE_THEN_EVALUATE and st.session_state.eval_data:
                     )
                 )
 
-                st.session_state.eval_data = updated_items
+                # Update the DataFrame with generated outputs
+                df = st.session_state.eval_data.copy()
+                df["output"] = [item.output for item in updated_items]
+                st.session_state.eval_data = df
+                st.session_state.outputs_generated = True
+                
                 st.success(
                     f"✅ Successfully generated outputs for {len(updated_items)} items!"
                 )
@@ -235,11 +245,11 @@ if mode == EvaluationMode.GENERATE_THEN_EVALUATE and st.session_state.eval_data:
                 st.stop()
 
 # Scorer Selection Section
-if st.session_state.eval_data and (
+if "eval_data" in st.session_state and (
     mode == EvaluationMode.EVALUATE_EXISTING
     or (
         mode == EvaluationMode.GENERATE_THEN_EVALUATE
-        and all(item.output for item in st.session_state.eval_data)
+        and st.session_state.get("outputs_generated", False)
     )
 ):
     st.header("4. Select Scoring Methods")
@@ -355,9 +365,6 @@ if st.session_state.eval_data and (
             disabled=not selected_scorers,
         ):
             with st.spinner("Running evaluation..."):
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-
                 try:
                     # DEVELOPER NOTE: This specific pattern for getting the event loop is
                     # the recommended best practice for using asyncio within Streamlit.
@@ -370,13 +377,17 @@ if st.session_state.eval_data and (
                         loop = asyncio.new_event_loop()
                         asyncio.set_event_loop(loop)
 
+                    # FIX: Define progress widgets before the callback that uses them
+                    progress_bar = st.progress(0.0, "Starting evaluation...")
+                    status_text = st.empty()
+
                     results = loop.run_until_complete(
                         run_evaluation_batch(
-                            st.session_state.eval_data,
-                            selected_scorers,
-                            scorer_configs,
-                            st.session_state.api_keys,
-                            batch_size=10,
+                            raw_data=uploaded_file,  # Pass the raw file object from the uploader
+                            selected_scorers=selected_scorers,
+                            scorer_configs=scorer_configs,
+                            api_keys=st.session_state.api_keys,
+                            mode=st.session_state.eval_mode,
                             progress_callback=lambda i, total: (
                                 progress_bar.progress(i / total),
                                 status_text.text(f"Evaluating {i}/{total} items..."),
@@ -395,17 +406,15 @@ if st.session_state.eval_data and (
                     st.error(f"Error during evaluation: {str(e)}")
 
     with col2:
-        st.metric("Total Items", len(st.session_state.eval_data))
+        st.metric("Total Items", len(st.session_state.eval_data) if "eval_data" in st.session_state else 0)
 
     with col3:
         st.metric("Selected Scorers", len(selected_scorers))
 
 # Navigation hints
-if not st.session_state.eval_data:
+if "eval_data" not in st.session_state:
     st.info("👆 Upload a CSV file to begin evaluation setup.")
-elif mode == EvaluationMode.GENERATE_THEN_EVALUATE and not all(
-    item.output for item in st.session_state.eval_data
-):
+elif mode == EvaluationMode.GENERATE_THEN_EVALUATE and not st.session_state.get("outputs_generated", False):
     st.info("👆 Generate outputs before selecting scorers.")
 elif not st.session_state.selected_scorers:
     st.info("👆 Select at least one scoring method to run evaluation.")

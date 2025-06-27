@@ -9,6 +9,7 @@ from core.scoring.fuzzy_match import FuzzyMatchScorer
 from core.scoring.llm_judge import LLMJudgeScorer
 from core.scoring.otel.criteria_selection_judge import \
     CriteriaSelectionJudgeScorer
+from core.scoring.tool_usage_scorer import ToolUsageScorer
 
 # Try to import optional scorer variants
 try:
@@ -30,6 +31,7 @@ SCORER_REGISTRY: Dict[str, Type[BaseScorer]] = {
     "fuzzy_match": FuzzyMatchScorer,
     "llm_judge": LLMJudgeScorer,
     "criteria_selection_judge": CriteriaSelectionJudgeScorer,
+    "tool_usage": ToolUsageScorer,
 }
 
 # Add optional scorers if available
@@ -107,6 +109,7 @@ __all__ = [
     "ExactMatchScorer",
     "FuzzyMatchScorer",
     "LLMJudgeScorer",
+    "ToolUsageScorer",
     "get_available_scorers",
     "create_scorer",
     "register_scorer",
