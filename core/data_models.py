@@ -46,22 +46,14 @@ class EvaluationItem(BaseModel):
 class ScorerResult(BaseModel):
     """Result from a single scorer for an evaluation item."""
 
-    scorer_name: str = Field(..., description="Name of the scorer")
-    score: float = Field(..., ge=0.0, le=1.0, description="Normalized score (0-1)")
-    passed: bool = Field(
-        ..., description="Whether the item passed this scorer's criteria"
-    )
-    reasoning: Optional[str] = Field(None, description="Explanation for the score")
-    details: Optional[Dict[str, Any]] = Field(
-        None, description="Additional scorer-specific details"
-    )
-    error: Optional[str] = Field(None, description="Error message if scoring failed")
-
-    @validator("score")
-    def validate_score(cls, v):
-        if not 0.0 <= v <= 1.0:
-            raise ValueError("Score must be between 0.0 and 1.0")
-        return round(v, 4)  # Round to 4 decimal places
+    scorer_name: str
+    score: Any
+    score_type: str = "float"
+    numeric_score: Optional[float] = None  # higher = better
+    passed: bool
+    reasoning: Optional[str] = None
+    error: Optional[str] = None
+    details: Dict[str, Any] = Field(default_factory=dict)
 
 
 class LLMConfig(BaseModel):
@@ -140,7 +132,11 @@ class EvaluationResults(BaseModel):
                 else:
                     scorer_stats[score.scorer_name]["failed"] += 1
 
-                scorer_stats[score.scorer_name]["scores"].append(score.score)
+                # Only append numeric scores
+                if score.numeric_score is not None:
+                    scorer_stats[score.scorer_name]["scores"].append(score.numeric_score)
+                elif score.score_type == "float" and isinstance(score.score, (int, float)):
+                    scorer_stats[score.scorer_name]["scores"].append(float(score.score))
 
         # Calculate final statistics
         for scorer_name, stats in scorer_stats.items():

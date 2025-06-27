@@ -8,7 +8,9 @@ from core.data_models import EvaluationItem, ScorerResult
 
 class BaseScorer(ABC):
     """Abstract base class for all scorers."""
-
+    
+    requires_api_key: bool = False  # NEW: Flag for API key requirement
+    
     def __init__(self, config: Dict[str, Any] | None = None) -> None:
         self.config = config or {}
 
