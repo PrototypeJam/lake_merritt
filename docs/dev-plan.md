@@ -380,7 +380,7 @@ Build the execution engine that interprets and runs Eval Packs while maintaining
 
 ### Tasks
 
-#### 1.0 Dependencies
+#### Done- 1.0 Dependencies
 
 **Technical Specifications:**
 Add the necessary libraries to `pyproject.toml`. Use `~=` for pre-1.0 libraries to prevent breaking changes. Add `pandas` here because the CSV ingester introduced later depends on it.
@@ -411,7 +411,7 @@ load_dotenv()  # Load environment variables from .env file for local dev
 
 *   Dependencies are installed correctly and available for import in subsequent tasks.
 
-#### 1.1 Pack Loader Implementation
+#### DONE- 1.1 Pack Loader Implementation
 **Technical Specifications:**
 Create `core/eval_pack/loader.py`. This class is responsible for reading and validating pack files.
 ```python
@@ -452,7 +452,7 @@ class EvalPackLoader:
 - Provides clear errors for invalid files (e.g., non-existent scorer or ingester).
 - Validates component references against the ComponentRegistry.
 
-#### 1.2 Backward Compatibility Layer
+#### DONE- 1.2 Backward Compatibility Layer
 **Technical Specifications:**
 Create `core/eval_pack/compatibility.py` to ensure the existing UI workflow continues to function seamlessly by translating its inputs into an in-memory Eval Pack.
 ```python
@@ -524,7 +524,7 @@ async def run_evaluation_batch(
 - The simple UI workflow functions identically to the user.
 - The executor's responsibility is now cleanly separated from ingestion.
 
-#### 1.3 Pipeline Executor
+#### DONE- 1.3 Pipeline Executor
 **Technical Specifications:**
 Create `core/eval_pack/executor.py`. This class's sole responsibility is to execute a scoring pipeline on an *already ingested* list of evaluation items.
 ```python
