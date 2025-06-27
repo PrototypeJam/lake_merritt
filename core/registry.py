@@ -46,7 +46,7 @@ class ComponentRegistry:
 
         try:
             from core.scoring.tool_usage_scorer import ToolUsageScorer
-            cls.register_scorer("tool_usage_scorer", ToolUsageScorer)
+            cls.register_scorer("tool_usage", ToolUsageScorer)
         except ImportError:
             print("INFO: ToolUsageScorer not implemented yet, skipping.")
 
@@ -74,3 +74,9 @@ class ComponentRegistry:
             cls.register_ingester("generic_otel", GenericOtelIngester)
         except ImportError:
             print("INFO: GenericOtelIngester not implemented yet, skipping.")
+        
+        try:
+            from core.otel.ingester import OTelTraceIngester
+            cls.register_ingester("otel", OTelTraceIngester)
+        except ImportError:
+            print("INFO: OTelTraceIngester not implemented yet, skipping.")
