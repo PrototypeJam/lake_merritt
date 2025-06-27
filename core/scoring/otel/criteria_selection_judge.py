@@ -35,6 +35,8 @@ Return JSON:
 
 class CriteriaSelectionJudgeScorer(BaseScorer):
     """LLM-as-Judge scoring of criteria-selection quality."""
+    
+    requires_api_key = True  # Criteria Selection Judge requires API key for LLM access
 
     def __init__(self, config: Dict[str, Any] = None):
         super().__init__(config)

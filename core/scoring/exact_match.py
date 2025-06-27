@@ -10,6 +10,8 @@ class ExactMatchScorer(BaseScorer):
     """
     Scorer that checks for exact string match between output and expected output.
     """
+    
+    requires_api_key = False  # No API key needed for exact match
 
     @property
     def name(self) -> str:
@@ -63,6 +65,8 @@ class CaseInsensitiveExactMatchScorer(BaseScorer):
     """
     Scorer that checks for exact match ignoring case.
     """
+    
+    requires_api_key = False  # No API key needed for case-insensitive match
 
     @property
     def name(self) -> str:
@@ -115,6 +119,8 @@ class NormalizedExactMatchScorer(BaseScorer):
     Scorer that normalizes text before checking for exact match.
     Normalization includes: lowercasing, removing extra whitespace, punctuation normalization.
     """
+    
+    requires_api_key = False  # No API key needed for normalized match
 
     @property
     def name(self) -> str:

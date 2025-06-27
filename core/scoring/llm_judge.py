@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 class LLMJudgeScorer(BaseScorer):
     """Scorer that uses an LLM to judge the quality of outputs."""
+    
+    requires_api_key = True  # LLM Judge requires API key for model access
 
     def __init__(self, config: Dict[str, Any] = None):
         super().__init__(config)
@@ -196,6 +198,8 @@ Provide your evaluation in the specified JSON format."""
 
 class StructuredLLMJudgeScorer(LLMJudgeScorer):
     """Enhanced LLM Judge that enforces structured output."""
+    
+    requires_api_key = True  # Structured LLM Judge requires API key for model access
 
     @property
     def name(self) -> str:
