@@ -14,6 +14,8 @@ class FuzzyMatchScorer(BaseScorer):
     """
     Scorer that uses fuzzy string matching to calculate similarity.
     """
+    
+    requires_api_key = False  # No API key needed for fuzzy matching
 
     def __init__(self, config: Dict[str, Any] = None):
         super().__init__(config)
