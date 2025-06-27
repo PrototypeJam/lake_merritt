@@ -199,3 +199,12 @@ cython_debug/
 # Evaluation results with potential API keys
 for-claude/eval_results_*_config.json
 for-claude/eval_results_*.json
+
+# Workspace-specific files (eval packs)
+workspaces/*
+!workspaces/default/
+!workspaces/_shared/
+workspaces/default/*.pyc
+workspaces/_shared/*.pyc
+*.pack.yaml.local
+*.pack.yml.local

@@ -139,8 +139,23 @@ Lake Merritt provides multiple scoring methods that can be used individually or 
 The project follows a modular architecture:
 - `app/`: Streamlit UI layer
 - `core/`: Business logic and evaluation orchestration
+  - `eval_pack/`: Eval Pack engine and loader
+  - `ingestion/`: Data ingestion modules for various formats
+  - `scoring/`: Scorer implementations
+  - `utils/`: Core utility functions
 - `services/`: External API integrations (LLM providers)
 - `utils/`: Helper utilities
+- `eval_packs/`: Eval Pack definitions and resources
+  - `examples/`: Example eval pack configurations
+  - `schemas/`: Schema definitions for eval packs
+  - `templates/`: Report templates for custom reporting
+- `workspaces/`: Isolated environments for custom eval packs
+  - `default/`: Default workspace for general use
+  - `_shared/`: Shared resources across workspaces
+- `tests/`: Test suite
+  - `unit/`: Unit tests
+  - `integration/`: Integration tests
+  - `eval_packs/`: Eval pack specific tests
 
 ### Evaluating OpenTelemetry Traces
 
