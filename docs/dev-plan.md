@@ -689,6 +689,8 @@ Create `eval_packs/examples/basic_csv_eval.yaml`, `eval_packs/examples/generic_o
 
 **CRITICAL REFACTORING NOTE:** This task must also migrate the logic from the old `core/ingestion.py` file into the new `core/ingestion/csv_ingester.py` and `core/ingestion/json_ingester.py` classes. The `core/ingestion.py` file must be deleted as part of this task. Update all legacy imports in `app/pages/2_eval_setup.py` that used the old `load_evaluation_data` function.
 
+**IMPORTANT:** During task 0.3, the `load_evaluation_data` import in `core/__init__.py` (lines 10 and 20) was temporarily commented out to prevent import errors. This import needs to be removed or updated as part of this refactoring task.
+
 ```python
 # core/ingestion/csv_ingester.py
 import pandas as pd

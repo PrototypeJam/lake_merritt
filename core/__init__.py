@@ -7,7 +7,7 @@ from core.data_models import (EvaluationItem, EvaluationMode,
                               EvaluationResults, ScorerResult)
 from core.evaluation import run_evaluation
 from core.generation import generate_outputs
-from core.ingestion import load_evaluation_data
+# TODO: Update after ingestion refactor - from core.ingestion import load_evaluation_data
 from core.reporting import results_to_csv, results_to_json
 
 __all__ = [
@@ -17,7 +17,7 @@ __all__ = [
     "EvaluationMode",
     "run_evaluation",
     "generate_outputs",
-    "load_evaluation_data",
+    # "load_evaluation_data",  # TODO: Add back after ingestion refactor
     "results_to_csv",
     "results_to_json",
 ]
