@@ -1,6 +1,6 @@
 # [Lake Merritt](https://lakemerritt.streamlit.app/): AI Evaluation Workbench
 
-A general-purpose, modular, and extensible platform for custom evaluations of AI models and applications.
+*A general-purpose, modular, and extensible platform for custom evaluations of AI models and applications.*
 
 **NOTE:** Lake Merritt is currently in the midst of a [major upgrade to support Dev Packs](https://github.com/PrototypeJam/lake_merritt/blob/main/docs/dev-plan.md) as part of a [larger evolution roadmap](https://github.com/PrototypeJam/lake_merritt/wiki/Dev-Plan-for-Eval-Packs-Major-Uplift).
 
