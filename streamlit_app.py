@@ -24,6 +24,10 @@ import sys
 from pathlib import Path
 
 import streamlit as st
+from dotenv import load_dotenv
+
+# Load environment variables from .env file for local dev
+load_dotenv()
 
 # Add the project root to Python path
 sys.path.insert(0, str(Path(__file__).parent))

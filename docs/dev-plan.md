@@ -394,6 +394,12 @@ protobuf ~= "5.0"
 pandas ~= "2.2"
 ```
 
+**IMPLEMENTATION NOTE:** During task 1.0, the version for `openinference-semantic-conventions` had to be adjusted from `~=0.9` to `~=0.1.21` because version 0.9 doesn't exist yet. The current stable version is 0.1.21. The actual dependencies installed are:
+- `openinference-semantic-conventions~=0.1.21`
+- `opentelemetry-proto>=1.0`
+- `protobuf>=4.0`
+- `pandas>=2.0.0` (already present)
+
 Also ensure `load_dotenv()` is called in `streamlit_app.py`:
 ```python
 # In streamlit_app.py, near the top after imports
