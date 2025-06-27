@@ -26,6 +26,9 @@ dependencies = [
     "aiofiles>=23.0.0",
     "numpy>=1.24.0",
     "nest-asyncio>=1.5",
+    "openinference-semantic-conventions~=0.9",
+    "opentelemetry-proto~=1.5",
+    "protobuf~=5.0",
 ]
 
 [project.optional-dependencies]
