@@ -6,7 +6,7 @@ You are OpenAI Codex, working in code‑mode.
 
 Project goal: implement Lake Merritt “Eval Packs” architecture (see docs/dev_plan.md).
 
-Always work on ONE numbered task at a time as directed by the user; open a feature branch, write tests, make changes, run `pytest`, then commit and raise a PR that references the task id.
+Always work on ONE numbered task at a time as directed by the user; write tests, make changes, run `pytest`, then commit and raise a PR that references the task id.
 
 Whenever you are in doubt about the task or how it fits into the broader dev plan for the major upgrade your task is part of, always refer to the full dev plan in docs/dev_plan.md for the full context of this project.
 
