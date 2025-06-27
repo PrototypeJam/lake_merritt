@@ -1,7 +1,3 @@
-"""
-Page 2: Evaluation Setup - Data Upload and Scoring Configuration
-"""
-
 # In file: app/pages/2_eval_setup.py
 """
 Page 2: Evaluation Setup - Data Upload and Scoring Configuration
@@ -11,6 +7,7 @@ import logging
 import pandas as pd
 import streamlit as st
 import nest_asyncio
+import yaml
 
 from core.data_models import EvaluationMode
 from core.evaluation import run_evaluation_batch
@@ -72,7 +69,6 @@ if eval_method == "Configure Manually (Legacy)":
         key="manual_upload"
     )
 
-    # This block now only reads for preview and stores the raw file. No ingestion.
     if uploaded_file:
         try:
             df = pd.read_csv(uploaded_file)
@@ -85,10 +81,8 @@ if eval_method == "Configure Manually (Legacy)":
             st.error(f"Could not read or preview CSV. Error: {e}")
             st.stop()
     
-    # Mode B: Actor Model Configuration - This restores the generation step
     if mode == EvaluationMode.GENERATE_THEN_EVALUATE and 'raw_data_for_manual_eval' in st.session_state:
         st.header("3. Configure Actor Model")
-        # Actor model configuration UI (unchanged from original file)
         col1, col2 = st.columns([1, 2])
         with col1:
             actor_provider = st.selectbox("Actor Model Provider", ["openai", "anthropic", "google"], key="actor_provider")
@@ -109,12 +103,10 @@ if eval_method == "Configure Manually (Legacy)":
                     "system_prompt": actor_system_prompt, "api_key": st.session_state.api_keys.get(actor_provider)
                 }
                 
-                # Run generation
                 loop = asyncio.get_event_loop()
                 updated_items = loop.run_until_complete(generate_outputs(initial_items, actor_config))
                 st.session_state.generated_items_for_manual_eval = updated_items
                 st.success(f"✅ Generated outputs for {len(updated_items)} items. You can now select scorers.")
-
 
     st.header("4. Select Scoring Methods")
     data_is_ready = ('raw_data_for_manual_eval' in st.session_state and mode == EvaluationMode.EVALUATE_EXISTING) or \
@@ -128,7 +120,6 @@ if eval_method == "Configure Manually (Legacy)":
             default=["exact_match"],
             format_func=lambda x: available_scorers[x]["display_name"],
         )
-        # Scorer config UI (this can be copied from the original file)
         scorer_configs = {}
         for scorer_name in selected_scorers:
             with st.expander(f"⚙️ Configure {available_scorers[scorer_name]['display_name']}"):
@@ -145,14 +136,10 @@ if eval_method == "Configure Manually (Legacy)":
         if st.button("🔬 Start Manual Evaluation", type="primary"):
             with st.spinner("Running manual evaluation..."):
                 try:
-                    # Determine the data source
                     if mode == EvaluationMode.GENERATE_THEN_EVALUATE:
-                        # Ingest from the already-generated items in memory
                         data_source = st.session_state.generated_items_for_manual_eval
                     else:
-                        # Pass the raw file for ingestion by the core engine
                         data_source = st.session_state.raw_data_for_manual_eval
-
                     loop = asyncio.get_event_loop()
                     results = loop.run_until_complete(
                         run_evaluation_batch(
@@ -160,7 +147,6 @@ if eval_method == "Configure Manually (Legacy)":
                             selected_scorers=selected_scorers,
                             scorer_configs=scorer_configs,
                             api_keys=st.session_state.api_keys,
-                            # pack=None is implicit, which triggers the compatibility layer
                         )
                     )
                     st.session_state.eval_results = results
@@ -180,28 +166,32 @@ else: # eval_method == "Upload Eval Pack (New)"
     if uploaded_pack_file:
         try:
             pack_loader = EvalPackLoader()
-            # Handle potential different ways of reading file content
-            if hasattr(uploaded_pack_file, 'getvalue'):
-                pack_content = uploaded_pack_file.getvalue().decode('utf-8')
-            else:
-                pack_content = uploaded_pack_file.read().decode('utf-8')
-            
-            # Use yaml.safe_load for parsing
-            import yaml
+            pack_content = uploaded_pack_file.getvalue().decode('utf-8')
             pack_dict = yaml.safe_load(pack_content)
-            pack = pack_loader.load_from_dict(pack_dict)
+            
+            # --- THIS IS THE CORRECTED PART ---
+            # Call the unified `load` method and handle the tuple it returns
+            pack, validation_errors = pack_loader.load(source=pack_dict)
+            
+            if validation_errors:
+                st.error("Eval Pack validation failed:")
+                for error in validation_errors:
+                    st.code(error, language='text')
+                st.stop() # Stop if the pack is invalid
+            # --- END OF CORRECTION ---
 
             st.session_state.pack = pack
-            st.success(f"Loaded Eval Pack: **{pack.name}** (v{pack.version})")
+            st.success(f"Loaded and validated Eval Pack: **{pack.name}** (v{pack.version})")
             with st.expander("Pack Details"):
                 st.json(pack.model_dump_json(indent=2))
         except Exception as e:
             st.error(f"Error loading or parsing Eval Pack: {e}")
             st.stop()
             
-    if pack:
+    # This check now uses the pack object that was validated and stored in session_state
+    if st.session_state.get("pack"):
+        pack = st.session_state.get("pack")
         st.header("2. Upload Data for the Pack")
-        # The data uploader now accepts any file type, as the ingester will handle it
         data_file = st.file_uploader(f"Upload data compatible with '{pack.ingestion.type}' ingester")
         
         if data_file:
