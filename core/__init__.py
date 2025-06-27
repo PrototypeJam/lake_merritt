@@ -9,6 +9,10 @@ from core.evaluation import run_evaluation
 from core.generation import generate_outputs
 # TODO: Update after ingestion refactor - from core.ingestion import load_evaluation_data
 from core.reporting import results_to_csv, results_to_json
+from core.registry import ComponentRegistry
+
+# Bootstrap the component registry at module load time
+ComponentRegistry.discover_builtins()
 
 __all__ = [
     "EvaluationItem",
