@@ -2,6 +2,8 @@
 
 A general-purpose, modular, and extensible platform for evaluating AI models and applications, primarily Large Language Models (LLMs).
 
+**NOTE:** Lake Merritt is currently in the midst of a [major upgrade to support Dev Packs](https://github.com/PrototypeJam/lake_merritt/blob/main/docs/dev-plan.md) as part of a [larger evolution roadmap](https://github.com/PrototypeJam/lake_merritt/wiki/Dev-Plan-for-Eval-Packs-Major-Uplift).
+
 ## Overview
 
 This platform provides a standardized yet flexible environment for:
