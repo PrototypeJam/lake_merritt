@@ -70,7 +70,7 @@ Establish the fundamental structure and contracts that all subsequent work will 
 
 ### Tasks
 
-#### 0.1 Project Structure Setup
+#### DONE- 0.1 Project Structure Setup
 
 **Technical Specifications:**
 
@@ -95,7 +95,7 @@ touch core/__init__.py
 *   Top-level README updated with new directory explanations.
 *   A root-level `.gitattributes` file contains `*.pb binary` to keep OpenTelemetry fixtures from polluting diffs and reduce accidental merge conflicts.
 
-#### 0.2 Schema Definition
+#### DONE- 0.2 Schema Definition
 
 **Technical Specifications:**
 Create `core/eval_pack/schema.py` with Pydantic models. We will include the `SpanKind` enum from OpenInference to enable precise filtering within our pipelines.
@@ -159,7 +159,7 @@ Create formal documentation in `docs/eval-packs/schema-v1.md`.
 *   Invalid YAML (e.g., incorrect `span_kind`) raises a clear `ValidationError`.
 *   Schema documentation is complete and includes examples.
 
-#### 0.2b Core Data Model Definition
+#### DONE- 0.2b Core Data Model Definition
 
 **Technical Specifications:**
 Define the core `ScorerResult` in `core/data_models.py`. This model is used throughout the application by the executor and scorers. `EvaluationItem` and `EvaluationResults` are assumed to already exist in this file.
@@ -185,7 +185,7 @@ class ScorerResult(BaseModel):
 *   The `ScorerResult` model is available for import in other modules.
 *   The model structure supports various scoring outcomes, including errors.
 
-#### 0.3 Component Registry Design
+#### DONE- 0.3 Component Registry Design
 
 **Technical Specifications:**
 Create `core/ingestion/base.py` to define the abstract base class for all ingesters.
@@ -318,7 +318,7 @@ class ComponentRegistry:
 - Built-in components are auto-discovered upon application startup, gracefully handling missing modules during development.
 - Requesting an unknown component name raises a clear `ValueError`.
 
-#### 0.4 Tracing Utility Stub
+#### DONE- 0.4 Tracing Utility Stub
 **Technical Specifications:**
 Create `core/utils/tracing.py` to provide a no-op tracing utility. This avoids code churn when real tracing is added later, as call sites will not need to change.
 
@@ -358,7 +358,7 @@ def get_tracer(name: str):
 - The no-op tracer can be imported and used without causing errors.
 - Provides a stable interface for future OpenTelemetry integration.
 
-#### 0.5 Application Bootstrap
+#### DONE- 0.5 Application Bootstrap
 **Technical Specifications:**
 Create `core/__init__.py` to ensure that the component registry is populated as soon as the `core` package is imported. This is a critical step for making components available to the rest of the application (UI, tests, etc.).
 ```python
@@ -688,7 +688,7 @@ class LLMJudgeScorer(BaseScorer):
 *   All LLM-based scorers have `requires_api_key = True`.
 *   The application can run an evaluation using any built-in scorer without runtime validation errors.
 
-#### 1.5 Basic Example Packs & Ingesters
+#### DONE- 1.5 Basic Example Packs & Ingesters
 
 **Technical Specifications:**
 Create `eval_packs/examples/basic_csv_eval.yaml`, `eval_packs/examples/generic_otel_eval.yaml`, and **implement the missing CSV and JSON ingesters** so the backward-compatibility layer and manual CSV uploads work.
@@ -912,7 +912,7 @@ results = loop.run_until_complete(
 *   Running a CSV-based evaluation through the "manual configuration" UI flow continues to work without error.
 *   The application no longer pre-processes the uploaded file into `EvaluationItem` objects in the UI; this logic is now fully delegated to the `core` module.
 
-#### UPDATE on Task 1.6
+#### DONE- UPDATE on Task 1.6
 
 #### 1.6 Update UI Binding to New `run_evaluation_batch`
 
