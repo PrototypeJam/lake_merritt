@@ -98,6 +98,10 @@ streamlit run streamlit_app.py
 ```
 Navigate to the "Evaluation Setup" page to begin.
 
+## Live Web-Based Version
+
+A free deployed version of Lake Merritt is currently available for low-volume live testing on Streamlit Community Cloud (subject to Streamlit's terms and restrictions), at: [https://lakemerritt.streamlit.app](https://lakemerritt.streamlit.app)
+
 ## Using Eval Packs
 
 The Eval Pack system is the most powerful feature of Lake Merritt. It turns your evaluation logic into a shareable, version-controllable artifact.
