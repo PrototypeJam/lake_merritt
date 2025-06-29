@@ -87,3 +87,10 @@ class ComponentRegistry:
             cls.register_ingester("otel_generic", GenericOtelIngester)
         except ImportError:
             print("INFO: GenericOtelIngester alias not registered, skipping.")
+        
+        # Register Python ingester
+        try:
+            from core.ingestion.python_ingester import PythonIngester
+            cls.register_ingester("python", PythonIngester)
+        except ImportError:
+            print("INFO: PythonIngester not implemented yet, skipping.")
