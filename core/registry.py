@@ -80,3 +80,10 @@ class ComponentRegistry:
             cls.register_ingester("otel", OTelTraceIngester)
         except ImportError:
             print("INFO: OTelTraceIngester not implemented yet, skipping.")
+        
+        # Add alias for GenericOtelIngester for easier discovery
+        try:
+            from core.ingestion.generic_otel_ingester import GenericOtelIngester
+            cls.register_ingester("otel_generic", GenericOtelIngester)
+        except ImportError:
+            print("INFO: GenericOtelIngester alias not registered, skipping.")

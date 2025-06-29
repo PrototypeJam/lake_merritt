@@ -1,0 +1,36 @@
+schema_version: "1.0"
+name: "Criteria Reasonableness from OTEL Traces"
+version: "0.1"
+description: "Judge whether the final three criteria chosen by an agent fit the user's goal."
+author: "Lake Merritt Team"
+
+ingestion:
+  type: "otel"            # Uses the registered OTelTraceIngester
+  config: {}              # No special options needed; OTelTraceIngester works out-of-the-box
+
+pipeline:
+  - name: "criteria_reasonableness"
+    scorer: "criteria_selection_judge"
+    config:
+      provider: "openai"
+      model: "gpt-4o"
+      threshold: 0.7
+      temperature: 0.1
+      # The scorer will use the metadata fields populated by OTelTraceIngester:
+      # - user_goal: extracted from the trace
+      # - generated_criteria: all criteria generated
+      # - selected_criteria: the final 3 selected
+      # - search_summary: context about the search
+    on_fail: "continue"
+
+reporting:
+  format: "markdown"
+  include_details: true
+
+metadata:
+  tags: ["otel", "agents", "criteria", "evaluation"]
+  notes: |
+    This eval pack ingests OpenTelemetry traces from agent prototypes and
+    evaluates whether the agent's selected success criteria are reasonable
+    given the user's original goal. The OTelTraceIngester automatically
+    extracts the necessary fields from the trace data.

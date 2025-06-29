@@ -1,0 +1,81 @@
+schema_version: "1.0"
+name: "OTel Agent — Criteria-Reasonableness Evaluation"
+version: "0.1"
+description: >
+  Ingest an OpenTelemetry trace produced by the agent prototype and let an
+  LLM judge whether the three "selected_criteria" for each goal are
+  collectively reasonable measures of success.
+author: "Lake Merritt Team (desktop prototype)"
+
+################################################################################
+# INGESTION
+#
+# The OTelTraceIngester knows how to walk an OTEL JSON trace
+# and emit an EvaluationItem with the following fields per record:
+#
+#   input            → the user's original goal statement                 (str)
+#   output           → JSON list (length 3) of the criteria selected      (str)
+#   expected_output  → (left blank – we have no ground-truth answer)      (str)
+#
+################################################################################
+ingestion:
+  type: "otel"                    # Uses the registered OTelTraceIngester
+  config:
+    # Optional: Add any configuration needed
+    # The ingester will automatically extract goal and criteria from traces
+
+################################################################################
+# EVALUATION PIPELINE
+#
+# Using LLM judge to compare {input} (goal) with {output} (chosen criteria)
+################################################################################
+pipeline:
+  - name: "criteria_reasonableness"
+    scorer: "llm_judge"
+    config:
+      provider: "openai"
+      model: "gpt-4o"
+      temperature: 0.1
+      threshold: 0.7          # ≥ 0.70 = reasonable, < 0.70 = not reasonable
+
+      system_prompt: |
+        You are a rigorous evaluation expert. Your job is to decide whether a
+        set of three success-criteria, taken together, provide a sensible,
+        distinct, and measurable way to judge whether the *goal* has been
+        achieved. Respond ONLY in valid JSON using the schema below.
+
+        Required JSON schema (return exactly these fields, nothing else):
+        {
+          "score":     float,   # 1.0 = fully reasonable, 0.0 = not reasonable
+          "passed":    boolean, # true if score >= threshold
+          "reasoning": string   # 2–4 sentences explaining the score
+        }
+
+      user_prompt_template: |
+        ## Goal
+        {input}
+
+        ## Candidate Criteria (exactly three, selected by the agent)
+        {output}
+
+        ## Instructions
+        1. Read the goal carefully.
+        2. Read the three criteria and judge whether, *together*, they give a
+           clear, measurable signal of success for that goal.
+        3. Think about coverage (do they address all key aspects?), overlap
+           (are they distinct?), and practicality (can the user actually
+           measure them?).
+        4. Produce the JSON object described in the system prompt.
+    on_fail: "continue"
+
+reporting:
+  format: "markdown"
+  template: "detailed"
+
+metadata:
+  tags: ["otel", "agents", "criteria", "llm-judge", "advanced"]
+  notes: |
+    This eval pack uses the LLM Judge scorer with custom prompts to evaluate
+    criteria selection quality. Any item that receives passed = score ≥ 0.70
+    will show as "Reasonable"; items under 0.70 will surface the LLM's
+    critique so you can iterate on the agent's selection logic.
