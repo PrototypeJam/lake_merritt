@@ -8,11 +8,11 @@ ingestion:
   type: "csv"
 
 pipeline:
-  # Stage 1: Normalized exact match with formatting tolerance
-  - name: "normalized_match"
-    scorer: "normalized_exact_match"
+  # Stage 1: Fuzzy match with high threshold for formatting tolerance
+  - name: "fuzzy_match"
+    scorer: "fuzzy_match"
     config:
-      ignore_trailing_punctuation: true
+      threshold: 0.85  # High threshold to catch formatting variations
     on_fail: "continue"
   
   # Stage 2: LLM judge for semantic analysis

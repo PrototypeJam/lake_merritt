@@ -19,26 +19,14 @@ pipeline:
       normalize_whitespace: false
     on_fail: "continue"
   
-  # Stage 2: Case-insensitive exact match
-  - name: "case_insensitive_match"
-    scorer: "case_insensitive_exact_match"
-    on_fail: "continue"
-  
-  # Stage 3: Normalized match with punctuation tolerance
-  - name: "normalized_match"
-    scorer: "normalized_exact_match"
-    config:
-      ignore_trailing_punctuation: true
-    on_fail: "continue"
-  
-  # Stage 4: Fuzzy match to catch minor variations
+  # Stage 2: Fuzzy match to catch minor variations
   - name: "fuzzy_match_check"
     scorer: "fuzzy_match"
     config:
       threshold: 0.9  # High threshold for legal citations
     on_fail: "continue"
   
-  # Stage 5: LLM semantic judge for detailed analysis
+  # Stage 3: LLM semantic judge for detailed analysis
   - name: "semantic_citation_judge"
     scorer: "llm_judge"
     config:
