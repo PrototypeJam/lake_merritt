@@ -151,7 +151,7 @@ class CriteriaSelectionJudgeScorer(BaseScorer):
                     details=(
                         {"raw_response": raw[:500]}
                         if self.config.get("debug")
-                        else None
+                        else {}
                     ),
                 )
 
@@ -162,7 +162,7 @@ class CriteriaSelectionJudgeScorer(BaseScorer):
                 score=score,
                 passed=passed,
                 reasoning=data.get("reasoning", ""),
-                details={"raw_response": raw} if self.config.get("debug") else None,
+                details={"raw_response": raw} if self.config.get("debug") else {},
             )
         except Exception as e:
             log.error("Judge failed with unexpected error: %s", e)

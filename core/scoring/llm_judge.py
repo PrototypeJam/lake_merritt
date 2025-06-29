@@ -65,7 +65,7 @@ Respond in JSON format:
 }"""
 
     async def score(self, item: EvaluationItem) -> ScorerResult:
-        """Score an item using LLM judgment."""
+        """Score an item using LLM judgment (pack-aware)."""
         if self.client is None:
             self.client = create_llm_client(self.provider, self.api_key)
 
@@ -77,16 +77,23 @@ Respond in JSON format:
                 reasoning="No output provided",
             )
 
-        # Construct the evaluation prompt
-        user_prompt = f"""Please evaluate the following:
-
-Input/Question: {item.input}
-
-Expected Output: {item.expected_output}
-
-Actual Output: {item.output}
-
-Provide your evaluation in the specified JSON format."""
+        # ---------------- NEW: allow pack-supplied template ----------------
+        user_prompt_template: str | None = self.config.get("user_prompt_template")
+        if user_prompt_template:
+            user_prompt = user_prompt_template.format(
+                input=item.input,
+                output=item.output,
+                expected_output=item.expected_output,
+            )
+        else:
+            user_prompt = (
+                f"Please evaluate the following:\n\n"
+                f"Input/Question: {item.input}\n\n"
+                f"Expected Output: {item.expected_output}\n\n"
+                f"Actual Output: {item.output}\n\n"
+                "Provide your evaluation in the specified JSON format."
+            )
+        # -------------------------------------------------------------------
 
         messages = [
             {"role": "system", "content": self.system_prompt},
@@ -94,7 +101,6 @@ Provide your evaluation in the specified JSON format."""
         ]
 
         try:
-            # Call the LLM
             response = await self.client.generate(
                 messages,
                 model=self.model,
@@ -102,9 +108,8 @@ Provide your evaluation in the specified JSON format."""
                 max_tokens=self.max_tokens,
             )
 
-            # Parse the response
+            # ---------- attempt to extract JSON block ----------
             try:
-                # Try to extract JSON from the response
                 json_start = response.find("{")
                 json_end = response.rfind("}") + 1
                 if json_start >= 0 and json_end > json_start:
@@ -112,34 +117,32 @@ Provide your evaluation in the specified JSON format."""
                     result = json.loads(json_str)
                 else:
                     raise ValueError("No JSON found in response")
-
             except (json.JSONDecodeError, ValueError) as e:
                 logger.error(f"Failed to parse LLM response as JSON: {e}")
                 logger.debug(f"Raw response: {response}")
-
-                # Fallback: try to extract score from text
-                score = self._extract_score_from_text(response)
+                score_from_text = self._extract_score_from_text(response)
                 result = {
-                    "score": score,
+                    "score": score_from_text,
                     "reasoning": response,
                     "errors": ["Failed to parse structured response"],
                 }
+            # ----------------------------------------------------
 
-            # Extract values with defaults
             score = float(result.get("score", 0.0))
-            score = max(0.0, min(1.0, score))
+            score = max(0.0, min(1.0, score))  # clamp 0-1
             reasoning = result.get("reasoning", "No reasoning provided")
             errors = result.get("errors", [])
 
-            # Prioritize explicit 'passed' field if provided
-            if "passed" in result and isinstance(result.get("passed"), bool):
+            if "passed" in result and isinstance(result["passed"], bool):
                 passed = result["passed"]
             else:
                 passed = score >= self.threshold
-                logger.warning(
-                    f"LLM response for item '{item.id}' missing 'passed' field or not a boolean. "
-                    f"Falling back to threshold check (score {score:.2f} >= {self.threshold})."
-                )
+                # Warn only if using default prompt
+                if not user_prompt_template:
+                    logger.warning(
+                        f"LLM response for item '{item.id}' missing 'passed'. "
+                        f"Falling back to threshold check (score {score:.2f} >= {self.threshold})."
+                    )
 
             return ScorerResult(
                 scorer_name="llm_judge",
@@ -151,21 +154,19 @@ Provide your evaluation in the specified JSON format."""
                     "threshold": self.threshold,
                     "errors": errors,
                     "raw_response": (
-                        response
-                        if self.config.get("include_raw_response", False)
-                        else None
+                        response if self.config.get("include_raw_response") else None
                     ),
                 },
             )
 
-        except Exception as e:
-            logger.error(f"Error in LLM judge scoring: {e}")
+        except Exception as exc:
+            logger.error(f"Error in LLM judge scoring: {exc}")
             return ScorerResult(
                 scorer_name="llm_judge",
                 score=0.0,
                 passed=False,
-                error=str(e),
-                reasoning=f"Failed to get LLM judgment: {str(e)}",
+                error=str(exc),
+                reasoning=f"Failed to obtain LLM judgment: {exc}",
             )
 
     def _extract_score_from_text(self, text: str) -> float:
@@ -174,7 +175,10 @@ Provide your evaluation in the specified JSON format."""
 
         patterns = [
             r"score[:\s]+([0-9]*\.?[0-9]+)",
-            r"([0-9]*\.?[0-9]+)/10",
+            r"score\s+is\s+(?:about\s+)?([0-9]*\.?[0-9]+)",
+            r"([0-9]*\.?[0-9]+)\s*(?:out\s*of\s*)?/?\s*1(?:\.0)?",
+            r"([0-9]*\.?[0-9]+)\s*/\s*10",
+            r"([0-9]+)\s*out\s*of\s*10",
             r"([0-9]+)%",
         ]
 
