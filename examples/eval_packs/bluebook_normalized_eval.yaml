@@ -1,0 +1,38 @@
+schema_version: "1.0"
+name: "Bluebook Normalized + LLM Judge"
+version: "1.0"
+description: "Combines a tolerant exact-match with an LLM semantic judge on Bluebook citation pairs."
+author: "Lake Merritt Team"
+
+ingestion:
+  type: "csv"
+
+pipeline:
+  - name: "normalized_match"
+    scorer: "normalized_exact_match"
+    config:
+      ignore_trailing_punctuation: true
+    on_fail: "continue"
+
+  - name: "semantic_judge"
+    scorer: "llm_judge"
+    config:
+      provider: "openai"
+      model: "gpt-4o"
+      threshold: 0.5
+      system_prompt: |
+        You are a legal citation expert following The Bluebook rules.
+        Return only JSON with "score" and "reasoning".
+      user_prompt_template: |
+        ### Instructions
+        Judge whether the two citations convey the same authority.
+
+        ### Rubric
+        * 1.0 – Substantively identical
+        * 0.5 – Same authority, format issues
+        * 0.0 – Different authority
+
+        ### Data
+        * Expected: {expected_output}
+        * Student:  {output}
+    on_fail: "continue"
