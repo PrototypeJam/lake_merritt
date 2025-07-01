@@ -2,72 +2,116 @@
 
 ## Lake Merritt AI Evaluation Workbench
 
-You are OpenAI Codex, working in code‑mode.
+You are **OpenAI Codex** operating in code-mode.
 
-Project goal: implement Lake Merritt “Eval Packs” architecture (see docs/dev_plan.md).
+**Project goal**   
+Implement and evolve the Lake Merritt **“Eval Packs”** architecture (see `docs/dev_plan.md`) **and complete the numbered fixes in `docs/FixList.md`.**
 
-Always work on ONE numbered task at a time as directed by the user; write tests, make changes, run `pytest`, then commit and raise a PR that references the task id.
+---
 
-Whenever you are in doubt about the task or how it fits into the broader dev plan for the major upgrade your task is part of, always refer to the full dev plan in docs/dev_plan.md for the full context of this project.
+### Scope and Hierarchy
+* **AGENTS.md** applies to the entire repository.  
+* **Task-specific instructions in `docs/FixList.md` take precedence** for fix-related work.
 
-### Environment Setup
-This project requires Python 3.9+ (lately we run on python-3.13 actually) and defines dependencies in `pyproject.toml`.
-We use `uv` for fast, reliable dependency installation.
+---
 
-### Testing Guidelines
+## Workflow
 
-**IMPORTANT**: Many tests require API keys that are not available in the CI environment. 
-Always run tests with the marker filter to skip API-dependent tests:
+### Task Execution Protocol
+1. **Read the full `FixPlan.md` / `FixList.md`** to understand context.  
+2. **Work on ONE numbered task at a time** as directed by the user.  
+3. Make only the changes required for that task.  
+4. Run **all programmatic checks** (see below).  
+5. Open a focused PR titled `fix/<task-id>: <slug>` that references the task number.  
+6. Ensure no unrelated changes are included.
+
+### Pull-Request Guidelines
+* **Title format**: `[fix/<task-id>] Brief description`  
+  Example: `fix/02: Hard-code CSV override for manual mode`.
+* **Description must include**  
+  – Reference to the task in `docs/FixList.md`  
+  – Summary of changes  
+  – Test results / coverage output  
+  – Deviations from plan (and why)
+* **Before opening PR**  
+  – Run all checks below  
+  – Squash or re-base to keep history clean
+
+---
+
+## Environment Setup
+This project runs on **Python 3.13** (3.9+ minimum).  
+Dependencies are declared in `pyproject.toml`; use **`uv`** for fast, reproducible installs.
 
 ```bash
-# Run all tests EXCEPT those requiring API keys
-pytest -v -m "not requires_api"
+# First-time setup
+uv pip install -e ".[test,dev]"
+````
 
-# Run only unit tests (recommended for CI)
-pytest tests/unit -v -m "not requires_api"
+---
 
-# If you need to run a specific test file
-pytest tests/unit/test_exact_match.py -v
-```
+## Testing Guidelines
 
-### IMPORTANT: Testing Protocol
-1. NEVER run tests that require API keys
-2. ALWAYS use: pytest -v -m "not requires_api"
-3. If a test needs internet for pip, that's OK
-4. NEVER commit .env files or expose API keys
+**IMPORTANT** – skip API-dependent tests.
 
-### Code Style
-- Use Black for formatting
-- Type hints are required for all new functions
-- Docstrings follow Google style
-
-### Common Tasks
-- **Install dependencies**: `uv pip install -e ".[test,dev]"`
-- **Run safe tests**: `pytest -v -m "not requires_api"`
-- **Run a specific scorer test**: `pytest tests/unit/test_exact_match.py -v`
-- **Check types**: `mypy core --ignore-missing-imports`
-- **Format code**: `black core tests`
-
-### Test Categories
-- **Unit tests** (`tests/unit/`): Test individual components in isolation
-- **Integration tests** (`tests/integration/`): Test component interactions
-- **API tests**: Marked with `@pytest.mark.requires_api` - these need real API credentials
-
-### Important Notes
-- Do NOT commit API keys or .env files
-- The Streamlit app requires manual testing (not suitable for automated CI)
-- Focus test efforts on the `core/` module business logic
-- If uv is not available, fallback to regular pip
-- Tests marked with `requires_api` will be skipped in CI environments
-
-### Quick Test Commands
 ```bash
-# Before committing - run the safe test suite
+# Run the safe suite (unit + integration, no API)
 pytest -v -m "not requires_api"
 
-# Test a specific module
-pytest tests/unit/test_exact_match.py -v
-
-# Run with coverage (excluding API tests)
-pytest -v -m "not requires_api" --cov=core --cov-report=term-missing
+# Run the new integration test explicitly
+pytest tests/integration/test_eval_pack_json_ingestion.py -v
 ```
+
+* Unit tests live in `tests/unit/`
+* Integration tests live in `tests/integration/`
+* Tests requiring external keys are marked `@pytest.mark.requires_api` and are skipped in CI.
+
+### Programmatic Checks (must pass before PR)
+
+```bash
+# 1. Safe tests
+pytest -v -m "not requires_api"
+
+# 2. mypy type check
+mypy core --ignore-missing-imports
+
+# 3. Black formatting
+black --check core tests
+
+# 4. Import sanity
+python -c "import core; print('Core imports successfully')"
+```
+
+---
+
+## Code Style & Generation
+
+* Format with **Black**; run `black core tests` to auto-format.
+* **Type-hints required** for all new functions.
+* Docstrings follow the **Google Python Style Guide**.
+* Avoid placeholders—when you replace a function, include the entire body.
+* Preserve existing behaviour unless the task explicitly changes it.
+* Add clear inline comments for non-obvious logic, following patterns already in the codebase.
+
+---
+
+## Quick Reference
+
+```bash
+# Install deps (fallback to pip if uv unavailable)
+uv pip install -e ".[test,dev]" || pip install -e ".[test,dev]"
+
+# Run safe tests
+pytest -v -m "not requires_api"
+
+# Format code
+black core tests
+```
+
+---
+
+### Reminders
+
+* **Never commit API keys or `.env` files.**
+* The Streamlit UI requires manual testing; CI focuses on `core/` logic.
+* Keep PRs granular—one fix = one PR.

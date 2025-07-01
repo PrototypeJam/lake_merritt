@@ -3,6 +3,7 @@
 ## Available Guides
 
 ### Core Documentation
+- [Current FixPlan](fixplan.md) - Specific fixes we are working on right now
 - [Development Plan](dev-plan.md) - Roadmap and architecture overview
 - [Eval Pack Schema v1](eval-packs/schema-v1.md) - YAML schema reference for evaluation packs
 
