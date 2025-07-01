@@ -10,7 +10,7 @@
 # pip install --upgrade pip (maybe not needed?)
 # streamlit run streamlit_app.py
 # ========================================
-# rm -rf venv (if needed)
+# rm -rf venv # (if needed)
 # uv venv venv
 # source venv/bin/activate
 # uv pip install -e ".[test,dev]"

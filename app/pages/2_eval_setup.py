@@ -167,25 +167,52 @@ else: # eval_method == "Upload Eval Pack (New)"
         try:
             pack_loader = EvalPackLoader()
             pack_content = uploaded_pack_file.getvalue().decode('utf-8')
-            pack_dict = yaml.safe_load(pack_content)
             
-            # --- THIS IS THE CORRECTED PART ---
-            # Call the unified `load` method and handle the tuple it returns
+            # First validate YAML syntax
+            try:
+                pack_dict = yaml.safe_load(pack_content)
+            except yaml.YAMLError as e:
+                st.error("❌ Invalid YAML syntax in Eval Pack:")
+                st.code(str(e), language='text')
+                st.info("💡 Check for incorrect indentation, missing colons, or invalid characters")
+                st.stop()
+            
+            # Then validate pack structure and components
             pack, validation_errors = pack_loader.load(source=pack_dict)
             
             if validation_errors:
-                st.error("Eval Pack validation failed:")
+                st.error("❌ Eval Pack validation failed:")
                 for error in validation_errors:
-                    st.code(error, language='text')
-                st.stop() # Stop if the pack is invalid
-            # --- END OF CORRECTION ---
-
+                    st.error(f"• {error}")
+                
+                # Provide helpful hints based on common errors
+                error_text = " ".join(validation_errors).lower()
+                if "unknown ingester" in error_text:
+                    st.info("💡 Available ingesters: csv, json, generic_otel, otel, openinference")
+                elif "unknown scorer" in error_text:
+                    st.info("💡 Available scorers: exact_match, fuzzy_match, llm_judge, tool_usage, criteria_selection_judge")
+                
+                st.stop()
+            
+            # Only set pack in session state if fully valid
             st.session_state.pack = pack
-            st.success(f"Loaded and validated Eval Pack: **{pack.name}** (v{pack.version})")
-            with st.expander("Pack Details"):
-                st.json(pack.model_dump_json(indent=2))
+            st.success(f"✅ Loaded and validated Eval Pack: **{pack.name}** (v{pack.version})")
+            
+            # Show pack details for confirmation
+            with st.expander("Pack Details", expanded=True):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Ingestion Type", pack.ingestion.type)
+                    st.metric("Pipeline Stages", len(pack.pipeline))
+                with col2:
+                    st.metric("Schema Version", pack.schema_version)
+                    if pack.description:
+                        st.info(pack.description)
+                        
         except Exception as e:
-            st.error(f"Error loading or parsing Eval Pack: {e}")
+            st.error(f"❌ Unexpected error loading Eval Pack: {str(e)}")
+            st.info("💡 Please check the pack file format and try again")
+            logger.exception("Failed to load eval pack")
             st.stop()
             
     # This check now uses the pack object that was validated and stored in session_state

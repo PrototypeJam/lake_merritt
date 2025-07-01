@@ -14,6 +14,7 @@ from core.eval_pack import (EvalPackV1, PipelineExecutor, create_legacy_pack,
                             extract_scorer_configs, extract_selected_scorers)
 from core.scoring import create_scorer, get_available_scorers
 from core.ingestion import CSVIngester
+from core.registry import ComponentRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -71,35 +72,74 @@ async def run_evaluation_batch(
     mode: EvaluationMode = EvaluationMode.EVALUATE_EXISTING,
 ) -> EvaluationResults:
     """
-    Run evaluation in batches for better performance with async scorers.
-    
-    This function supports both raw data ingestion and pre-processed items.
-    If raw_data is provided, it will be ingested first using the appropriate ingester.
-    
-    Args:
-        raw_data: Raw data (file object or DataFrame) to ingest
-        items: List of evaluation items (used if raw_data is not provided)
-        selected_scorers: Names of scorers to use (required if pack not provided)
-        scorer_configs: Configuration for each scorer (required if pack not provided)
-        api_keys: API keys for LLM providers
-        batch_size: Number of items to process in parallel
-        progress_callback: Optional callback for progress updates
-        pack: Optional Eval Pack to use (can be EvalPackV1 or dict)
-        mode: Evaluation mode (used for data ingestion)
-    
-    Returns:
-        EvaluationResults object containing all results and statistics
+    Ingest data (if needed) and run a pack-based evaluation, preserving the
+    legacy scorer path when no pack is supplied.
     """
-    # Handle raw data ingestion if provided
+
+    # ------------------------------------------------------------------
+    # 1. Resolve which evaluation pack we are using **before** ingestion
+    # ------------------------------------------------------------------
+    eval_pack: EvalPackV1
+    if pack is not None:
+        if isinstance(pack, dict):
+            from core.eval_pack.loader import EvalPackLoader
+            loader = EvalPackLoader()
+            eval_pack, errors = loader.load(pack)
+            if errors:
+                logger.error(f"Pack validation errors: {errors}")
+                raise ValueError(f"Invalid pack configuration: {errors}")
+        else:
+            eval_pack = pack
+    else:
+        # Fallback to legacy one-off pack built from UI scorer choices
+        if not selected_scorers:
+            raise ValueError("Either 'pack' or 'selected_scorers' must be provided")
+        
+        eval_pack = create_legacy_pack(
+            selected_scorers=selected_scorers,
+            scorer_configs=scorer_configs or {},
+            api_keys=api_keys or {},
+            items=items or [],  # Pass empty list to maintain compatibility
+        )
+        
+        # CRITICAL: Force CSV ingestion for manual mode
+        # The legacy UI path is always CSV-based, so we override any guessing
+        eval_pack.ingestion.type = "csv"
+        eval_pack.ingestion.config = {"mode": mode.value}
+
+    # ------------------------------------------------------------------
+    # 2. Ingest raw data if the caller passed a file / DataFrame
+    # ------------------------------------------------------------------
     if raw_data is not None:
         logger.info("Ingesting raw data before evaluation")
-        ingester = CSVIngester()
-        items = ingester.ingest(raw_data, {"mode": mode.value})
-        logger.info(f"Ingested {len(items)} items from raw data")
+
+        ingester_type = eval_pack.ingestion.type
+        logger.info(f'Using ingester "{ingester_type}" from pack')
+
+        try:
+            ingester_cls = ComponentRegistry.get_ingester(ingester_type)
+            ingester = ingester_cls()
+        except ValueError as e:
+            raise ValueError(
+                f"Pack specifies unknown ingester '{ingester_type}'. "
+                f"Available ingesters: {list(ComponentRegistry._ingesters.keys())}"
+            ) from e
+
+        try:
+            ingestion_cfg = eval_pack.ingestion.config or {}
+            items = ingester.ingest(raw_data, ingestion_cfg)
+        except Exception as e:
+            logger.error(f"Ingestion failed: {e}")
+            raise ValueError(f"Failed to ingest data using {ingester_type}: {e}") from e
+
+        logger.info("Ingested %d items", len(items))
+
     elif items is None:
         raise ValueError("Either 'raw_data' or 'items' must be provided")
-    
-    # Call the original implementation with the items
+
+    # ------------------------------------------------------------------
+    # 3. Delegate to the existing implementation
+    # ------------------------------------------------------------------
     return await _run_evaluation_batch_impl(
         items=items,
         selected_scorers=selected_scorers,
@@ -107,7 +147,7 @@ async def run_evaluation_batch(
         api_keys=api_keys,
         batch_size=batch_size,
         progress_callback=progress_callback,
-        pack=pack,
+        pack=eval_pack,
     )
 
 

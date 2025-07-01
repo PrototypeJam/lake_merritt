@@ -1,0 +1,31 @@
+# Test Case 3: Unknown Scorer
+# This file has valid YAML syntax but references an unknown scorer
+
+schema_version: "1.0"
+name: "Unknown Scorer Pack"
+version: "1.0.0"
+description: "Test pack with unknown scorer type"
+
+ingestion:
+  type: "csv"  # Valid ingester
+  parameters:
+    file_path: "test.csv"
+    header: true
+    delimiter: ","
+
+pipeline:
+  - name: "Stage with Unknown Scorer"
+    scorer: "unknown_scorer_type"  # This scorer doesn't exist
+    on_fail: "continue"
+    expected_key: "expected"
+    actual_key: "actual"
+  
+  - name: "Stage with Another Unknown Scorer"
+    scorer: "another_unknown_scorer"  # Another scorer that doesn't exist
+    on_fail: "stop"
+    expected_key: "expected"
+    actual_key: "actual"
+
+reporting:
+  format: "html"
+  include_metadata: true

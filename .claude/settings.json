@@ -19,10 +19,27 @@
     }
   },
   "auto_approve": {
-    "file_edits": true,
-    "file_creates": true,
+    "file_edits": false,
+    "file_creates": false,
     "bash_commands": true,
     "web_requests": true
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "(Write|Edit)\\(.*\\)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"\\n🔍  Proposed change — review below (compare to FixList)…\\n\""
+          },
+          {
+            "type": "command",
+            "command": "git --no-pager diff -U0"
+          }
+        ]
+      }
+    ]
   },
   "context": {
     "max_tokens": 200000,
@@ -30,7 +47,7 @@
     "auto_refresh": true
   },
   "development": {
-    "test_runner": "pytest",
+    "test_runner": "pytest -m 'not requires_api'",
     "python_path": "venv/bin/python",
     "auto_lint": false,
     "auto_format": false
@@ -38,7 +55,7 @@
   "project": {
     "type": "python",
     "name": "Lake Merritt Eval Packs",
-    "description": "AI evaluation workbench with eval pack architecture",
+    "description": "AI evaluation workbench with eval-pack architecture",
     "main_branch": "main",
     "working_branch": "feature/eval-pack-architecture"
   }
