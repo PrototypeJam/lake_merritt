@@ -21,53 +21,61 @@ results = st.session_state.eval_results
 # Summary Statistics
 st.header("1. Summary Statistics")
 
-# Create columns for each scorer
-scorer_cols = st.columns(len(results.summary_stats))
+# Check if we have summary stats
+if not results.summary_stats:
+    st.info("No summary statistics available. This may happen when using custom eval packs with non-standard data formats.")
+else:
+    # Create columns for each scorer
+    scorer_cols = st.columns(len(results.summary_stats))
 
-for idx, (scorer_name, stats) in enumerate(results.summary_stats.items()):
-    with scorer_cols[idx]:
-        # Format scorer name for display
-        display_name = scorer_name.replace("_", " ").title()
+    for idx, (scorer_name, stats) in enumerate(results.summary_stats.items()):
+        with scorer_cols[idx]:
+            # Format scorer name for display
+            display_name = scorer_name.replace("_", " ").title()
 
-        st.markdown(f"### {display_name}")
+            st.markdown(f"### {display_name}")
 
-        # Main metric
-        accuracy = stats.get("accuracy", 0)
-        st.metric(
-            "Accuracy",
-            f"{accuracy:.1%}",
-            delta=None,
-            help="Percentage of items that passed this scorer",
+            # Main metric
+            accuracy = stats.get("accuracy", 0)
+            st.metric(
+                "Accuracy",
+                f"{accuracy:.1%}",
+                delta=None,
+                help="Percentage of items that passed this scorer",
+            )
+
+            # Additional stats
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Passed", stats.get("passed", 0))
+            with col2:
+                st.metric("Failed", stats.get("failed", 0))
+
+            # Score distribution for fuzzy match and LLM judge
+            if (
+                scorer_name in ["fuzzy_match", "llm_judge"]
+                and "score_distribution" in stats
+            ):
+                st.markdown("**Score Distribution**")
+                score_dist = stats["score_distribution"]
+                st.bar_chart(score_dist)
+
+            if stats.get("errors", 0) > 0:
+                st.error(f"⚠️ {stats['errors']} items failed to score")
+
+    # Add this new block after the for loop to show a total error summary:
+    total_errors = sum(s.get("errors", 0) for s in results.summary_stats.values())
+    if total_errors > 0:
+        st.warning(
+            f"⚠️ A total of {total_errors} scoring errors occurred across all scorers. Check the detailed results below for individual error messages."
         )
-
-        # Additional stats
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Passed", stats.get("passed", 0))
-        with col2:
-            st.metric("Failed", stats.get("failed", 0))
-
-        # Score distribution for fuzzy match and LLM judge
-        if (
-            scorer_name in ["fuzzy_match", "llm_judge"]
-            and "score_distribution" in stats
-        ):
-            st.markdown("**Score Distribution**")
-            score_dist = stats["score_distribution"]
-            st.bar_chart(score_dist)
-
-        if stats.get("errors", 0) > 0:
-            st.error(f"⚠️ {stats['errors']} items failed to score")
-
-# Add this new block after the for loop to show a total error summary:
-total_errors = sum(s.get("errors", 0) for s in results.summary_stats.values())
-if total_errors > 0:
-    st.warning(
-        f"⚠️ A total of {total_errors} scoring errors occurred across all scorers. Check the detailed results below for individual error messages."
-    )
 # Detailed Results Table
 st.header("2. Detailed Results")
 
+# Check if we have any items to display
+if not results.items:
+    st.warning("No evaluation items to display. This may happen if the ingestion didn't produce any valid items.")
+    st.stop()
 
 # Convert results to DataFrame for display
 def results_to_dataframe(results) -> pd.DataFrame:
