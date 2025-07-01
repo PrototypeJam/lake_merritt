@@ -80,11 +80,10 @@ Respond in JSON format:
         # ---------------- NEW: allow pack-supplied template ----------------
         user_prompt_template: str | None = self.config.get("user_prompt_template")
         if user_prompt_template:
-            user_prompt = user_prompt_template.format(
-                input=item.input,
-                output=item.output,
-                expected_output=item.expected_output,
-            )
+            # Convert the entire item to a dictionary to make all its fields
+            # (including a JSON string of the metadata) available for formatting.
+            item_dict = item.model_dump(mode="json")
+            user_prompt = user_prompt_template.format(**item_dict)
         else:
             user_prompt = (
                 f"Please evaluate the following:\n\n"

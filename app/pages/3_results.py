@@ -221,10 +221,33 @@ for score in selected_item.scores:
 
 # Add trace timeline for OTel traces
 if "otel_trace" in selected_item.metadata:
-    st.markdown("### Trace timeline")
-    for i, step in enumerate(selected_item.metadata["otel_trace"]["steps"]):
-        with st.expander(f"{i+1}. {step['stage']}", expanded=(i == 0)):
-            st.json({k: v for k, v in step.items() if k != "stage"})
+    st.markdown("### Trace Timeline")
+    trace_data = selected_item.metadata.get("otel_trace", {})
+    spans_to_display = []
+
+    # Handle the 'manual_traces.json' format which has a "steps" key
+    if "steps" in trace_data and isinstance(trace_data.get("steps"), list):
+        spans_to_display = trace_data["steps"]
+        # Standardize the title field for consistent display
+        for span in spans_to_display:
+            if 'name' not in span:
+                span['name'] = span.get('stage', 'Unnamed Step')
+    
+    # Handle the standard OTLP/JSON format with "resource_spans"
+    elif "resource_spans" in trace_data and isinstance(trace_data.get("resource_spans"), list):
+        for rs in trace_data.get("resource_spans", []):
+            for ss in rs.get("scope_spans", []):
+                spans_to_display.extend(ss.get("spans", []))
+
+    if not spans_to_display:
+        st.warning("Could not find any spans or steps to display in the trace.")
+    else:
+        # Display all found spans/steps
+        for i, span in enumerate(spans_to_display):
+            # Use the span's name for the title, falling back to stage or a default
+            span_title = span.get("name", span.get("stage", f"Span {i+1}"))
+            with st.expander(f"**{i+1}.** {span_title}", expanded=(i == 0)):
+                st.json(span)
 
 # Export Results Preview
 st.header("4. Results Summary")
