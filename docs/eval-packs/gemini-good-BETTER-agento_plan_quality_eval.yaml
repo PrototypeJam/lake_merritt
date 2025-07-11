@@ -1,0 +1,71 @@
+schema_version: "1.0"
+name: "Goal-to-Plan Structure Quality Evaluation"
+version: "1.1" # Incremented version
+description: "Evaluates the quality and structural integrity of an AI-generated project plan against the user's original goal, using an OTEL trace."
+
+# --- INGESTION ---
+ingestion:
+  type: "generic_otel"
+  config:
+    # With our new trace-aware ingester, these paths will be searched
+    # across all spans in the trace.
+    input_field: "attributes.user_goal"
+    output_field: "attributes.gen_ai.response.content"
+    
+    # We don't have a ground truth 'expected_output' in the trace,
+    # so the LLM judge will rely on its own expert criteria.
+    default_expected_output: "The plan should be a comprehensive and actionable strategy to achieve the user's stated goal."
+    
+    # This is crucial for passing the full trace context to the LLM Judge.
+    include_trace_context: true
+
+# --- PIPELINE ---
+pipeline:
+  # Stage 1: A quick, cheap check for basic structural validity.
+  # This ensures we don't waste money on an LLM call for malformed output.
+  - name: "structural_integrity_check"
+    scorer: "fuzzy_match"
+    config:
+      threshold: 1.0
+      # We check if the agent's output contains a key part of the required JSON structure.
+      # This is a simple but effective way to validate the basic format.
+      expected_output: '"Overall_Summary":'
+
+  # Stage 2: A deep, semantic evaluation of the plan's quality.
+  - name: "goal_alignment_judge"
+    scorer: "llm_judge"
+    config:
+      provider: "openai"
+      model: "gpt-4o" # Switched to gpt-4o for speed and cost-effectiveness
+      threshold: 0.8  # We expect a high-quality plan to pass.
+      
+      system_prompt: |
+        You are a world-class project manager and senior consultant. Your task is to rigorously evaluate an AI-generated project plan based on a user's high-level goal. Your evaluation must be critical, insightful, and actionable.
+
+        Assess the plan on the following dimensions:
+        1.  **Comprehensiveness**: Does the plan's outline cover all critical, implicit, and explicit aspects of the user's goal? Are there any glaring omissions?
+        2.  **Actionability**: Are the steps discrete, logical, and realistically executable? Could a project team start work based on this plan?
+        3.  **Clarity & Conciseness**: Is the language professional, clear, and unambiguous? Is it free of jargon and fluff?
+        4.  **Strategic Alignment**: Does the plan not only fulfill the request but also represent a *good strategy* for achieving the goal? Does it anticipate potential roadblocks?
+
+        Return ONLY a valid JSON object with the following structure:
+        {
+          "score": float,         // A score from 0.0 (useless) to 1.0 (perfect).
+          "passed": boolean,      // True if the score is >= 0.8.
+          "reasoning": string,    // A concise, expert summary of your assessment (2-3 sentences).
+          "strengths": [string],  // A list of 2-3 key strengths of the plan.
+          "improvements": [string] // A list of 2-3 specific, actionable suggestions for improvement.
+        }
+
+      user_prompt_template: |
+        Please provide your expert evaluation for the following AI-generated project plan.
+
+        ### User's Original Goal:
+        {input}
+
+        ### AI-Generated Plan Structure (JSON):
+        ```json
+        {output}
+        ```
+
+        Based on the criteria in your system instructions, provide your evaluation in the required JSON format.
