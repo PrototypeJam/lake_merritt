@@ -35,9 +35,10 @@ pipeline:
   - name: "goal_alignment_judge"
     scorer: "llm_judge"
     config:
-      provider: "openai"
-      model: "gpt-4o" # Switched to gpt-4o for speed and cost-effectiveness
+      provider: "google"
+      model: "gemini-2.5-pro" # Switched to Gemini
       threshold: 0.8  # We expect a high-quality plan to pass.
+      max_tokens: 4096      # <-- ADD THIS LINE
       
       system_prompt: |
         You are a world-class project manager and senior consultant. Your task is to rigorously evaluate an AI-generated project plan based on a user's high-level goal. Your evaluation must be critical, insightful, and actionable.

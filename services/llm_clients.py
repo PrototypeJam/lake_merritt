@@ -289,6 +289,17 @@ class GoogleAIClient(BaseLLMClient):
 
             chat = genai_model.start_chat(history=chat_history)
 
+            # --- START OF FIX ---
+            # Define less strict safety settings for the evaluation context.
+            # This is necessary because prompts about evaluation, critique, and finding
+            # "glaring omissions" can sometimes be flagged by default safety filters.
+            safety_settings = {
+                "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
+                "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
+                "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
+                "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
+            }
+            
             response = await asyncio.to_thread(
                 chat.send_message,
                 last_user_message,
@@ -297,9 +308,26 @@ class GoogleAIClient(BaseLLMClient):
                     "max_output_tokens": max_tokens,
                     **kwargs,
                 },
+                safety_settings=safety_settings
             )
 
-            return response.text
+            # Add a check for a valid response before accessing .text
+            if response.parts:
+                return response.text
+            else:
+                # Provide a more informative error message
+                finish_reason_name = "UNKNOWN"
+                if response.candidates and response.candidates[0].finish_reason:
+                     finish_reason_name = response.candidates[0].finish_reason.name
+
+                error_message = (
+                    f"Gemini response was empty. Finish Reason: {finish_reason_name}. "
+                    "This is often due to safety settings or a content filter."
+                )
+                logger.error(error_message)
+                raise ValueError(error_message)
+            # --- END OF FIX ---
+
         except Exception as e:
             logger.error(f"Google AI API error: {e}")
             raise
