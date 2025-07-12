@@ -231,7 +231,7 @@ else: # eval_method == "Upload Eval Pack (New)"
                             run_evaluation_batch(
                                 raw_data=data_file,
                                 pack=pack,
-                                api_keys=st.session_state.api_keys
+                                api_keys=st.session_state.api_keys # <<< THIS IS THE FIX
                             )
                         )
                         st.session_state.eval_results = results
