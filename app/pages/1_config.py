@@ -89,13 +89,38 @@ with col1:
 
     # Model selection based on provider
     model_options = {
-        "openai": ["gpt-4", "gpt-4-turbo-preview", "gpt-3.5-turbo"],
+        "openai": [
+            "gpt-4.1",
+            "gpt-4.1-mini",
+            "gpt-4.1-nano",
+            "gpt-4o",
+            "gpt-4-turbo",
+            "gpt-3.5-turbo",
+        ],
         "anthropic": [
+            "claude-opus-4-20250514",
+            "claude-sonnet-4-20250514",
+            "claude-3-5-sonnet-20240620",
+            "claude-3-5-haiku-20241022",
             "claude-3-opus-20240229",
             "claude-3-sonnet-20240229",
             "claude-3-haiku-20240307",
         ],
-        "google": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro"],
+        "google": [
+            "gemini-2.5-pro",
+            "gemini-2.5-flash",
+            "gemini-2.5-flash-lite-preview-06-17",
+            "gemini-2.5-flash-preview-native-audio-dialog",
+            "gemini-2.5-flash-exp-native-audio-thinking-dialog",
+            "gemini-2.5-flash-preview-tts",
+            "gemini-2.5-pro-preview-tts",
+            "gemini-2.0-flash",
+            "gemini-2.0-flash-preview-image-generation",
+            "gemini-2.0-flash-lite",
+            "gemini-1.5-pro",
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-8b",
+        ],
     }
 
     current_models = model_options[judge_config["provider"]]

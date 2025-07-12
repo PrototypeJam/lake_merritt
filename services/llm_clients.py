@@ -168,28 +168,12 @@ class OpenAIClient(BaseLLMClient):
         """Validate OpenAI API key."""
         return bool(self.api_key and self.api_key.startswith("sk-"))
 
+_____
+
+# In services/llm_clients.py
 
 class AnthropicClient(BaseLLMClient):
-    """Anthropic (Claude) API client."""
-
-    def __init__(self, api_key: Optional[str] = None):
-        super().__init__(api_key or os.getenv("ANTHROPIC_API_KEY"))
-        self._client = None
-
-    @property
-    def client(self):
-        """Lazy initialization of Anthropic client."""
-        if self._client is None:
-            try:
-                from anthropic import AsyncAnthropic
-
-                self._client = AsyncAnthropic(api_key=self.api_key)
-            except ImportError:
-                raise ImportError(
-                    "Anthropic package not installed. Run: pip install anthropic"
-                )
-        return self._client
-
+    #... (other methods) ...
     @retry_with_exponential_backoff()
     async def generate(
         self,
@@ -201,110 +185,30 @@ class AnthropicClient(BaseLLMClient):
     ) -> str:
         """Generate response using Anthropic API."""
         try:
-            system_message = None
-            user_messages = []
+            # Extract system prompt and user/assistant messages
+            system_prompt = next((msg["content"] for msg in messages if msg["role"] == "system"), None)
+            user_facing_messages = [msg for msg in messages if msg["role"] != "system"]
 
-            for msg in messages:
-                if msg["role"] == "system":
-                    system_message = msg["content"]
-                else:
-                    user_messages.append(
-                        {"role": msg["role"], "content": msg["content"]}
-                    )
-
-            response = await self.client.messages.create(
-                model=model,
-                messages=user_messages,
-                system=system_message,
-                temperature=temperature,
-                max_tokens=max_tokens,
+            # Build the request payload dynamically
+            request_payload = {
+                "model": model,
+                "messages": user_facing_messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
                 **kwargs,
-            )
+            }
+
+            # Only add the system parameter if it has a value
+            if system_prompt:
+                request_payload["system"] = system_prompt
+
+            response = await self.client.messages.create(**request_payload)
 
             return response.content[0].text
         except Exception as e:
             logger.error(f"Anthropic API error: {e}")
             raise
-
-    def validate_api_key(self) -> bool:
-        """Validate Anthropic API key."""
-        return bool(self.api_key)
-
-
-class GoogleAIClient(BaseLLMClient):
-    """Google AI (Gemini) API client."""
-
-    def __init__(self, api_key: Optional[str] = None):
-        super().__init__(api_key or os.getenv("GOOGLE_API_KEY"))
-        self._client = None
-
-    @property
-    def client(self):
-        """Lazy initialization of Google AI client."""
-        if self._client is None:
-            try:
-                import google.generativeai as genai
-
-                genai.configure(api_key=self.api_key)
-                self._client = genai
-            except ImportError:
-                raise ImportError(
-                    "Google AI package not installed. Run: pip install google-generativeai"
-                )
-        return self._client
-
-    @retry_with_exponential_backoff()
-    async def generate(
-        self,
-        messages: List[Dict[str, str]],
-        model: str = "gemini-1.5-pro",
-        temperature: float = 0.7,
-        max_tokens: int = 1000,
-        **kwargs,
-    ) -> str:
-        """Generate response using Google AI API."""
-        try:
-            genai_model = self.client.GenerativeModel(model)
-
-            chat_history = []
-            last_user_message = ""
-
-            for msg in messages:
-                if msg["role"] == "system":
-                    continue
-                elif msg["role"] == "user":
-                    last_user_message = msg["content"]
-                else:
-                    chat_history.append(
-                        {
-                            "role": "user" if msg["role"] == "user" else "model",
-                            "parts": [msg["content"]],
-                        }
-                    )
-
-            system_content = next(
-                (msg["content"] for msg in messages if msg["role"] == "system"), ""
-            )
-            if system_content:
-                last_user_message = f"{system_content}\n\n{last_user_message}"
-
-            chat = genai_model.start_chat(history=chat_history)
-
-            response = await asyncio.to_thread(
-                chat.send_message,
-                last_user_message,
-                generation_config={
-                    "temperature": temperature,
-                    "max_output_tokens": max_tokens,
-                    **kwargs,
-                },
-            )
-
-            return response.text
-        except Exception as e:
-            logger.error(f"Google AI API error: {e}")
-            raise
-
+            
     def validate_api_key(self) -> bool:
         """Validate Google AI API key."""
         return bool(self.api_key)
