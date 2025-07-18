@@ -50,4 +50,4 @@ dev = [
 # list here from the [project] section above. This is where
 # setuptools expects to find it.
 [tool.setuptools]
-packages = ["app", "core", "services", "utils", "ingestion"]
+packages = ["app", "core", "services", "utils"]

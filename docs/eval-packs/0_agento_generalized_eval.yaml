@@ -9,7 +9,7 @@ ingestion:
   type: "python"
   config:
     # These two keys are required by the PythonIngester to find our code
-    script_path: "ingestion/agento_generalized_ingester.py"
+    script_path: "core/ingestion/agento_generalized_ingester.py"
     entry_function: "ingest_agento_trace"
     
     # This 'trace_file' key is a custom parameter our ingester function looks for.
