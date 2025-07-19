@@ -1,0 +1,64 @@
+{
+  "evaluation_config": {
+    "eval_pack": {
+      "name": "Generalized Agento Lifecycle Evaluation",
+      "version": "1.0",
+      "description": "A reusable evaluation pack that judges the quality of each step in an Agento workflow by leveraging semantic OTEL attributes. Works on any Agento trace.\n",
+      "author": null
+    },
+    "pipeline": [
+      {
+        "name": "judge_initial_plan",
+        "scorer": "llm_judge",
+        "config": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "threshold": 0.8,
+          "system_prompt": "You are an expert project manager. Evaluate if the provided project plan is a sound and comprehensive response to the user's goal. Return JSON with \"score\" (0-1) and \"reasoning\".\n",
+          "user_prompt_template": "### User's Goal:\n{input}\n\n### Agent's Generated Plan:\n{output}\n\n### Your Task: Evaluate the plan's quality and alignment with the goal.\n"
+        },
+        "on_fail": "continue",
+        "span_kind": null
+      },
+      {
+        "name": "judge_step_draft",
+        "scorer": "llm_judge",
+        "config": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "threshold": 0.7,
+          "system_prompt": "You are an expert evaluator. Assess if the draft for step '{metadata[step_name]}' faithfully implements its instructions and criteria, considering the overall user goal. Return JSON with \"score\" and \"reasoning\".\n",
+          "user_prompt_template": "### Overall User Goal:\n{metadata[user_goal]}\n\n### Instructions for '{metadata[step_name]}':\n{input}\n\n### Evaluation Criteria for this Step:\n{expected_output}\n\n### Agent's Draft for this Step:\n{output}\n\n### Your Task: Evaluate how well the draft fulfills its specific instructions.\n"
+        },
+        "on_fail": "continue",
+        "span_kind": null
+      },
+      {
+        "name": "judge_step_critique",
+        "scorer": "llm_judge",
+        "config": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "threshold": 0.8,
+          "system_prompt": "You are an expert at providing constructive feedback. Evaluate if the critique for '{metadata[step_name]}' is insightful, actionable, and likely to improve the draft to better meet the user's goal. Return JSON with \"score\" and \"reasoning\".\n",
+          "user_prompt_template": "### Overall User Goal:\n{metadata[user_goal]}\n\n### Original Draft for '{metadata[step_name]}' (to be critiqued):\n{input}\n\n### Agent's Critique of the Draft:\n{output}\n\n### Your Task: Evaluate the quality of the critique. Is it valuable?"
+        },
+        "on_fail": "continue",
+        "span_kind": null
+      }
+    ],
+    "batch_size": 10,
+    "privacy_settings": {}
+  },
+  "model_configs": {
+    "default_judge_config": {
+      "provider": "openai",
+      "model": "gpt-4.1",
+      "temperature": 0.3,
+      "max_tokens": 1000,
+      "system_prompt": "You are an expert evaluator. Compare the actual output to the expected output and provide:\n1. A score from 0.0 to 1.0 (where 1.0 is perfect match)\n2. A brief reasoning for your score\n3. Any specific errors or discrepancies noted\n\nRespond in JSON format:\n{\n    \"score\": 0.0-1.0,\n    \"reasoning\": \"explanation\",\n    \"errors\": [\"error1\", \"error2\"] or []\n}"
+    }
+  },
+  "selected_scorers": [],
+  "timestamp": "20250718_235102"
+}

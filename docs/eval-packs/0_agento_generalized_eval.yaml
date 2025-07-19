@@ -1,23 +1,19 @@
 schema_version: "1.0"
 name: "Generalized Agento Lifecycle Evaluation"
-version: "1.0"
+version: "2.0"
 description: >
-  A reusable evaluation pack that judges the quality of each step in an Agento
-  workflow by leveraging semantic OTEL attributes. Works on any Agento trace.
+  A reusable evaluation pack that judges the quality of each step in a multi-module
+  Agento workflow by leveraging semantic OTEL attributes.
 
 ingestion:
   type: "python"
   config:
-    # These two keys are required by the PythonIngester to find our code
     script_path: "core/ingestion/agento_generalized_ingester.py"
     entry_function: "ingest_agento_trace"
-    
-    # This 'trace_file' key is a custom parameter our ingester function looks for.
-    # In the UI, the uploaded file object will be passed as the value for this key.
     trace_file: "placeholder_for_ui_upload.otlp.json" 
 
 pipeline:
-  # This stage will ONLY run on items where metadata.step_type == 'plan'
+  # Stage 1: Judge the initial plan from Module 1
   - name: "judge_initial_plan"
     scorer: "llm_judge"
     run_if: "metadata['step_type'] == 'plan'"
@@ -30,13 +26,11 @@ pipeline:
       user_prompt_template: |
         ### User's Goal:
         {input}
-
         ### Agent's Generated Plan:
         {output}
-
         ### Your Task: Evaluate the plan's quality and alignment with the goal.
 
-  # This stage will ONLY run on DRAFT items
+  # Stage 2: Judge the initial drafts from Module 2
   - name: "judge_step_draft"
     scorer: "llm_judge"
     run_if: "metadata['step_type'] == 'draft'"
@@ -45,23 +39,17 @@ pipeline:
       model: "gpt-4o"
       threshold: 0.7
       system_prompt: |
-        You are an expert evaluator. Assess if the draft for step '{metadata[step_name]}' faithfully implements its instructions and criteria, considering the overall user goal. Return JSON with "score" and "reasoning".
+        You are an expert evaluator. Assess if the draft for step '{metadata[step_name]}' faithfully implements its instructions and criteria. Return JSON with "score" and "reasoning".
       user_prompt_template: |
         ### Overall User Goal:
         {metadata[user_goal]}
-
-        ### Instructions for '{metadata[step_name]}':
-        {input}
-
-        ### Evaluation Criteria for this Step:
+        ### Instructions & Criteria for this Step:
         {expected_output}
-
-        ### Agent's Draft for this Step:
+        ### Agent's Draft for '{metadata[step_name]}':
         {output}
-
         ### Your Task: Evaluate how well the draft fulfills its specific instructions.
 
-  # This stage will ONLY run on CRITIQUE items
+  # Stage 3: Judge the critiques from Module 2
   - name: "judge_step_critique"
     scorer: "llm_judge"
     run_if: "metadata['step_type'] == 'critique'"
@@ -70,15 +58,71 @@ pipeline:
       model: "gpt-4o"
       threshold: 0.8
       system_prompt: |
-        You are an expert at providing constructive feedback. Evaluate if the critique for '{metadata[step_name]}' is insightful, actionable, and likely to improve the draft to better meet the user's goal. Return JSON with "score" and "reasoning".
+        You are an expert at providing constructive feedback. Evaluate if the critique for '{metadata[step_name]}' is insightful and actionable. Return JSON with "score" and "reasoning".
       user_prompt_template: |
         ### Overall User Goal:
         {metadata[user_goal]}
-      
         ### Original Draft for '{metadata[step_name]}' (to be critiqued):
         {input}
-
         ### Agent's Critique of the Draft:
         {output}
-
         ### Your Task: Evaluate the quality of the critique. Is it valuable?
+
+  ### NEW EVALUATION STAGES FOR MODULE 3 ###
+
+  # Stage 4: Judge successfully accepted revisions from Module 3
+  - name: "judge_accepted_revision"
+    scorer: "llm_judge"
+    run_if: "metadata['step_type'] == 'accepted_revision'"
+    config:
+      provider: "openai"
+      model: "gpt-4o"
+      threshold: 0.8
+      system_prompt: |
+        You are a quality assurance expert. Evaluate if the final revised content successfully and completely implements the requested revisions. Return JSON with "score" (0-1) and "reasoning".
+      user_prompt_template: |
+        ### Step Name:
+        {metadata[step_name]}
+        ### Original Revision Request:
+        {input}
+        ### Final Accepted Content:
+        {output}
+        ### Your Task: Did the final content successfully address the revision request?
+
+  # Stage 5: Judge timed-out revisions from Module 3
+  - name: "judge_timed_out_revision"
+    scorer: "llm_judge"
+    run_if: "metadata['step_type'] == 'timed_out_revision'"
+    config:
+      provider: "openai"
+      model: "gpt-4o"
+      threshold: 0.5 # Lower threshold as this is an analysis of a failure case
+      system_prompt: |
+        You are a senior agent architect analyzing a failed revision attempt. The process timed out after 3 iterations. Evaluate the final state. Return a JSON object with "score" (0-1, representing how promising the final state was), "reasoning", "strengths" of the last draft, and "weaknesses" of the final critique.
+      user_prompt_template: |
+        ### Step Name:
+        {metadata[step_name]}
+        ### Original Revision Request:
+        {input}
+        ### Last Attempted Draft (before timeout):
+        {output}
+        ### Final Critique (that caused the loop to continue):
+        {metadata[final_critique]}
+        ### Your Task: Analyze this failed state. Was the last draft close to being acceptable? Was the final critique fair or was it stuck on minor issues? Provide a detailed analysis.
+
+  # Stage 6: Judge the final, holistic plan from Module 3
+  - name: "judge_holistic_final_plan"
+    scorer: "llm_judge"
+    run_if: "metadata['step_type'] == 'holistic_review'"
+    config:
+      provider: "openai"
+      model: "gpt-4o"
+      threshold: 0.8
+      system_prompt: |
+        You are the lead project manager. Review the entire final project plan for overall quality, coherence, and alignment with the original user goal. Look for any major gaps, inconsistencies, or repeated content. Return JSON with "score" (0-1) and "reasoning".
+      user_prompt_template: |
+        ### Original User Goal:
+        {metadata[user_goal]}
+        ### Final Revised Project Plan (JSON):
+        {output}
+        ### Your Task: Provide a holistic, final verdict on the quality of the entire plan. Is it ready to be delivered?
