@@ -8,6 +8,7 @@ import pandas as pd
 import streamlit as st
 import nest_asyncio
 import yaml
+import io  # For completeness, in case you use Option 2B elsewhere
 
 from core.data_models import EvaluationMode
 from core.evaluation import run_evaluation_batch
@@ -127,8 +128,115 @@ if eval_method == "Configure Manually (Legacy)":
                     threshold = st.slider("Similarity Threshold", 0.0, 1.0, 0.8, 0.05, key=f"{scorer_name}_threshold")
                     scorer_configs[scorer_name] = {"threshold": threshold}
                 elif scorer_name == "llm_judge":
-                    scorer_configs[scorer_name] = st.session_state.model_configs["default_judge_config"].copy()
-                    st.json(scorer_configs[scorer_name], expanded=False)
+                    # --- FULLY EDITABLE LLM JUDGE CONFIG ---
+                    judge_cfg = st.session_state.model_configs["default_judge_config"].copy()
+
+                    judge_cfg["provider"] = st.selectbox(
+                        "LLM Judge Provider",
+                        ["openai", "anthropic", "google"],
+                        index=["openai", "anthropic", "google"].index(judge_cfg.get("provider", "openai")),
+                        key="manual_judge_provider"
+                    )
+
+                    model_options = {
+                        "openai": [
+                            "gpt-4.1",
+                            "gpt-4.1-mini",
+                            "gpt-4.1-nano",
+                            "gpt-4o",
+                            "gpt-4-turbo",
+                            "gpt-3.5-turbo",
+                        ],
+                        "anthropic": [
+                            "claude-opus-4-20250514",
+                            "claude-sonnet-4-20250514",
+                            "claude-3-5-sonnet-20240620",
+                            "claude-3-5-haiku-20241022",
+                            "claude-3-opus-20240229",
+                            "claude-3-sonnet-20240229",
+                            "claude-3-haiku-20240307",
+                        ],
+                        "google": [
+                            "gemini-2.5-pro",
+                            "gemini-2.5-flash",
+                            "gemini-2.5-flash-lite-preview-06-17",
+                            "gemini-2.5-flash-preview-native-audio-dialog",
+                            "gemini-2.5-flash-exp-native-audio-thinking-dialog",
+                            "gemini-2.5-flash-preview-tts",
+                            "gemini-2.5-pro-preview-tts",
+                            "gemini-2.0-flash",
+                            "gemini-2.0-flash-preview-image-generation",
+                            "gemini-2.0-flash-lite",
+                            "gemini-1.5-pro",
+                            "gemini-1.5-flash",
+                            "gemini-1.5-flash-8b",
+                        ],
+                    }
+                    current_models = model_options[judge_cfg["provider"]]
+                    if judge_cfg["model"] not in current_models:
+                        judge_cfg["model"] = current_models[0]
+                    judge_cfg["model"] = st.selectbox(
+                        "LLM Judge Model",
+                        current_models,
+                        index=current_models.index(judge_cfg["model"]),
+                        key="manual_judge_model"
+                    )
+
+                    judge_cfg["temperature"] = st.slider(
+                        "LLM Judge Temperature",
+                        min_value=0.0,
+                        max_value=1.0,
+                        value=judge_cfg.get("temperature", 0.3),
+                        step=0.1,
+                        key="manual_judge_temp"
+                    )
+
+                    judge_cfg["max_tokens"] = st.number_input(
+                        "LLM Judge Max Tokens",
+                        min_value=100,
+                        max_value=4000,
+                        value=judge_cfg.get("max_tokens", 1000),
+                        step=100,
+                        key="manual_judge_max_tokens"
+                    )
+
+                    judge_cfg["threshold"] = st.slider(
+                        "LLM Judge Pass Threshold",
+                        min_value=0.0,
+                        max_value=1.0,
+                        value=judge_cfg.get("threshold", 0.7),
+                        step=0.05,
+                        key="manual_judge_threshold"
+                    )
+
+                    judge_cfg["system_prompt"] = st.text_area(
+                        "LLM Judge System Prompt",
+                        value=judge_cfg.get("system_prompt", ""),
+                        height=200,
+                        key="manual_judge_system_prompt"
+                    )
+
+                    judge_cfg["user_prompt_template"] = st.text_area(
+                        "LLM Judge User Prompt Template",
+                        value=judge_cfg.get("user_prompt_template", """
+Compare the actual output to the expected output for the given input.
+
+Input: {input}
+Expected Output: {expected_output}
+Actual Output: {output}
+
+Respond in JSON format with:
+- "score": 0.0 to 1.0
+- "reasoning": explanation of your evaluation
+""".strip()),
+                        height=200,
+                        key="manual_judge_user_prompt"
+                    )
+
+                    # --- CRITICAL: Assign API key for selected provider ---
+                    judge_cfg["api_key"] = st.session_state.api_keys.get(judge_cfg["provider"])
+
+                    scorer_configs[scorer_name] = judge_cfg
                 else:
                     scorer_configs[scorer_name] = {}
 
@@ -136,19 +244,27 @@ if eval_method == "Configure Manually (Legacy)":
         if st.button("🔬 Start Manual Evaluation", type="primary"):
             with st.spinner("Running manual evaluation..."):
                 try:
-                    if mode == EvaluationMode.GENERATE_THEN_EVALUATE:
-                        data_source = st.session_state.generated_items_for_manual_eval
-                    else:
-                        data_source = st.session_state.raw_data_for_manual_eval
                     loop = asyncio.get_event_loop()
-                    results = loop.run_until_complete(
-                        run_evaluation_batch(
-                            raw_data=data_source,
-                            selected_scorers=selected_scorers,
-                            scorer_configs=scorer_configs,
-                            api_keys=st.session_state.api_keys,
+                    if mode == EvaluationMode.GENERATE_THEN_EVALUATE:
+                        # Pass the already-generated items directly
+                        results = loop.run_until_complete(
+                            run_evaluation_batch(
+                                items=st.session_state.generated_items_for_manual_eval,
+                                selected_scorers=selected_scorers,
+                                scorer_configs=scorer_configs,
+                                api_keys=st.session_state.api_keys,
+                            )
                         )
-                    )
+                    else:
+                        # Pass the raw file for ingestion
+                        results = loop.run_until_complete(
+                            run_evaluation_batch(
+                                raw_data=st.session_state.raw_data_for_manual_eval,
+                                selected_scorers=selected_scorers,
+                                scorer_configs=scorer_configs,
+                                api_keys=st.session_state.api_keys,
+                            )
+                        )
                     st.session_state.eval_results = results
                     st.success("✅ Manual evaluation completed successfully!")
                 except Exception as e:
