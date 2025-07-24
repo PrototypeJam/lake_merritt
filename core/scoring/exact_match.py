@@ -1,10 +1,11 @@
+# core/scoring/exact_match.py
 """
 Exact match scorer - checks if output exactly matches expected output.
 """
 
+from typing import Dict, Any
 from core.data_models import EvaluationItem, ScorerResult
 from core.scoring.base import BaseScorer
-
 
 class ExactMatchScorer(BaseScorer):
     """
@@ -23,12 +24,13 @@ class ExactMatchScorer(BaseScorer):
             "Checks if the output exactly matches the expected output (case-sensitive)"
         )
 
-    def score(self, item: EvaluationItem) -> ScorerResult:
+    def score(self, item: EvaluationItem, stage_config: Dict[str, Any]) -> ScorerResult:
         """
         Score an item based on exact string match.
 
         Args:
             item: The evaluation item to score
+            stage_config: Stage-specific configuration (not used here, but required for compatibility)
 
         Returns:
             ScorerResult with binary score (1.0 for match, 0.0 for no match)
@@ -56,10 +58,9 @@ class ExactMatchScorer(BaseScorer):
             details={
                 "output_length": len(item.output),
                 "expected_length": len(item.expected_output),
-                "stripped_match": item.output.strip() == item.expected_output.strip(),
+                "stripped_match": is_match,
             },
         )
-
 
 class CaseInsensitiveExactMatchScorer(BaseScorer):
     """
@@ -76,12 +77,13 @@ class CaseInsensitiveExactMatchScorer(BaseScorer):
     def description(self) -> str:
         return "Checks if the output matches expected output ignoring case differences"
 
-    def score(self, item: EvaluationItem) -> ScorerResult:
+    def score(self, item: EvaluationItem, stage_config: Dict[str, Any]) -> ScorerResult:
         """
         Score an item based on case-insensitive exact match.
 
         Args:
             item: The evaluation item to score
+            stage_config: Stage-specific configuration (not used here, but required for compatibility)
 
         Returns:
             ScorerResult with binary score
@@ -112,7 +114,6 @@ class CaseInsensitiveExactMatchScorer(BaseScorer):
                 "case_insensitive_match": is_match,
             },
         )
-
 
 class NormalizedExactMatchScorer(BaseScorer):
     """
@@ -166,12 +167,13 @@ class NormalizedExactMatchScorer(BaseScorer):
 
         return text
 
-    def score(self, item: EvaluationItem) -> ScorerResult:
+    def score(self, item: EvaluationItem, stage_config: Dict[str, Any]) -> ScorerResult:
         """
         Score an item based on normalized exact match.
 
         Args:
             item: The evaluation item to score
+            stage_config: Stage-specific configuration (not used here, but required for compatibility)
 
         Returns:
             ScorerResult with binary score
