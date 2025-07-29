@@ -28,6 +28,45 @@ This mode is for when you have test inputs but need to generate the outputs to b
 - **Required Data**: `input` and `expected_output` (the `output` column is not needed).
 - **Use Case**: You want to test a new prompt or model on a set of inputs. Lake Merritt will first use a configurable "Actor LLM" to generate the `output` for each row, and *then* run the scoring pipeline on the newly generated data.
 
+### Mode B "Hold-My-Beer" Workflow: From Idea to Insight in Minutes
+
+Lake Merritt introduces a uniquely powerful workflow that dramatically accelerates the evaluation process, making it accessible to everyone on your team, regardless of their technical background. This approach allows you to bootstrap an entire evaluation lifecycle starting with nothing more than a list of inputs and a plain-text description of your goals.
+
+This isn't for generating production-grade, statistically perfect evaluation data. Instead, it's an incredibly handy feature for a quick start and rapid iteration, allowing you to see how an entire evaluation would run *before* you invest heavily in manual data annotation.
+
+Here’s how you can go from an idea to a full evaluation run in five steps:
+
+#### **Step 1: Start with Only Inputs and an Idea**
+
+Begin with the bare minimum: a simple CSV file containing only an `input` column. Your "idea" is a natural language explanation of what you're trying to achieve—your success criteria, the persona you want the AI to adopt, and the business, legal, or risk rules it must follow. You can write this directly in the UI or in a markdown file.
+
+#### **Step 2: Generate Your "Gold Standard" (`expected_output`)**
+
+Using **Mode B: Generate New Data**, you'll run the "Generate Expected Outputs" sub-mode. The system will use your context to guide a powerful LLM, which will read each of your inputs and generate a high-quality, correctly formatted `expected_output` for every row. At the end of this step, you can download a brand new dataset, ready for evaluation.
+
+#### **Step 3: Generate the Model's Response (`output`)**
+
+With your new dataset in hand, you immediately run a second Mode B pass. This time, you'll use the "Generate Outputs" sub-mode. You provide context for the model you want to *test* (the "Actor LLM"), and the system generates its `output` for each input, creating a complete three-column CSV.
+
+#### **Step 4: Run a Full, End-to-End Evaluation**
+
+Now, with a complete dataset of synthetically generated data, you can immediately run a **Mode A: Evaluate Existing Outputs** workflow. You can select scorers like `LLM-as-a-Judge` to see how the generated `outputs` stack up against the generated `expected_outputs`, getting a full report with scores and analysis.
+
+#### **Step 5: Iterate with Human Insight**
+
+This is the most crucial step. Having seen a full evaluation lifecycle, you and your team can now intelligently refine the process. You can go back and manually revise the generated `expected_outputs` to better reflect reality-based context, edit the inputs to cover more edge cases, or adjust your initial context to improve the success criteria.
+
+#### Why This is a Game-Changer for AI Evaluation
+
+This workflow is a significant step forward for accessible, open-source AI evaluation tools, offering several unique advantages:
+
+*   **Rapid Prototyping & Iteration**: Go from a concept to a full evaluation baseline in minutes, not days or weeks. This allows you to test hypotheses and iterate on your models and prompts at an unprecedented speed.
+*   **Democratizing Evaluation**: This feature is designed for non-technical experts. A product manager, lawyer, or risk officer can directly provide the context that matters in a simple text file, ensuring that the evaluation's success criteria truly support and reflect their domain of authority. It brings essential business, legal, and safety expertise directly into the evaluation setup process.
+*   **Evaluate Your Evals First**: Before spending dozens of hours meticulously hand-crafting a "perfect" dataset, you can run a quick, synthetic version through the entire lifecycle. This helps you validate whether your evaluation criteria and prompts are even correct in the first place.
+*   **From Zero to Baseline Instantly**: For new projects without existing test data, this workflow instantly generates a starter set of correctly formatted synthetic data, providing a tangible starting point for more rigorous, reality-based annotation later on.
+
+By transforming the tedious task of initial dataset creation into a creative and iterative process, Lake Merritt empowers teams to build better, safer, and more aligned AI systems faster than ever before.
+
 ## Getting Started: Two Paths to Evaluation
 
 Lake Merritt offers two UIs for running evaluations, catering to different needs.
