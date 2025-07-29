@@ -1,44 +1,58 @@
-# core/ingestion/csv_ingester.py
+# In file: core/ingestion/csv_ingester.py
+
 import pandas as pd
 from typing import List, Dict, Any, Union, IO
 from core.ingestion.base import BaseIngester
 from core.data_models import EvaluationItem
 
 class CSVIngester(BaseIngester):
-    """Ingests rows from a CSV whose header contains at least: input, expected_output[, output]."""
+    """
+    Ingests data from a CSV file. It requires an 'input' column and will
+    ingest 'output' and 'expected_output' columns if they are present.
+    
+    This ingester is stateless and simple - it only maps CSV columns to
+    EvaluationItem fields without enforcing workflow-specific validation.
+    """
 
-    def ingest(self, data: Union[str, IO, pd.DataFrame], config: Dict) -> List[EvaluationItem]:
+    def ingest(self, data: Union[str, IO, pd.DataFrame], config: Dict[str, Any]) -> List[EvaluationItem]:
         """
-        Ingests a CSV file or DataFrame and returns a list of EvaluationItem objects.
-        - In Mode A (evaluate_existing): requires 'input' and 'expected_output' columns.
-        - In Mode B (generate_then_evaluate): only requires 'input' column.
-        """
-        df = pd.read_csv(data) if not isinstance(data, pd.DataFrame) else data
-        mode = config.get("mode", "evaluate_existing")
+        Parses a CSV into a list of EvaluationItem objects.
 
-        # --- Mode-aware column requirements ---
-        if mode == "generate_then_evaluate":
-            required_columns = {"input"}
+        Args:
+            data: The CSV data source (file path, file object, or DataFrame).
+            config: Configuration dictionary (currently unused).
+
+        Returns:
+            A list of EvaluationItem objects.
+
+        Raises:
+            ValueError: If the 'input' column is missing or the CSV is empty.
+        """
+        if isinstance(data, pd.DataFrame):
+            df = data
         else:
-            required_columns = {"input", "expected_output"}
+            if hasattr(data, 'seek'):
+                data.seek(0)
+            df = pd.read_csv(data)
 
-        missing = required_columns.difference(df.columns)
-        if missing:
-            raise ValueError(f"CSV missing required column(s) for mode '{mode}': {', '.join(missing)}")
+        if df.empty:
+            raise ValueError("The uploaded CSV file is empty.")
+
+        if "input" not in df.columns:
+            raise ValueError("CSV is missing the required 'input' column.")
 
         items: List[EvaluationItem] = []
         for idx, row in df.iterrows():
-            # Defensive: always ensure metadata is a dict, never a Series or NaN
-            metadata = {c: row[c] for c in df.columns if c not in {"id","input","output","expected_output"}}
-            if not isinstance(metadata, dict):
-                metadata = dict(metadata)
+            metadata = {
+                c: row[c] for c in df.columns if c not in {"id", "input", "output", "expected_output"}
+            }
+
             items.append(
                 EvaluationItem(
                     id=str(row.get("id", idx + 1)),
                     input=str(row["input"]),
-                    output=str(row.get("output", "")) if mode == "evaluate_existing" else None,
-                    # For generation, expected_output may be missing, so default to empty.
-                    expected_output=str(row.get("expected_output", "")),
+                    output=str(row["output"]) if "output" in row and pd.notna(row["output"]) else None,
+                    expected_output=str(row["expected_output"]) if "expected_output" in row and pd.notna(row["expected_output"]) else None,
                     metadata=metadata
                 )
             )

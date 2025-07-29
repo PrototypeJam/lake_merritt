@@ -23,7 +23,9 @@ class EvaluationItem(BaseModel):
     id: Optional[str] = None
     input: str = Field(..., description="The input/prompt given to the model")
     output: Optional[str] = Field(None, description="The model's actual output")
-    expected_output: str = Field(..., description="The ideal/correct output")
+    # FIX: 'expected_output' is now Optional to support the "Generate Expected Outputs" workflow,
+    # where it does not exist at the time of ingestion.
+    expected_output: Optional[str] = Field(None, description="The ideal/correct output")
     metadata: Dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata"
     )
@@ -33,9 +35,11 @@ class EvaluationItem(BaseModel):
 
     @validator("input", "expected_output")
     def non_empty_strings(cls, v):
-        if not v or not v.strip():
+        # FIX: The validator must now handle 'None' values gracefully, only validating non-empty strings.
+        if v is not None and not v.strip():
             raise ValueError("Input and expected_output cannot be empty")
-        return v.strip()
+        # Return v, which could be a string or None
+        return v
 
     class Config:
         json_encoders = {
@@ -99,6 +103,8 @@ class EvaluationConfig(BaseModel):
 
 class EvaluationResults(BaseModel):
     """Complete results from an evaluation run."""
+
+
 
     items: List[EvaluationItem] = Field(..., description="Evaluated items with scores")
     config: Dict[str, Any] = Field(..., description="Configuration used for this run")

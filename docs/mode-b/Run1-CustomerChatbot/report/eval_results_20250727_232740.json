@@ -1,0 +1,750 @@
+{
+  "items": [
+    {
+      "id": "1",
+      "input": "def calculate_sum(a: int, b: int) -> int:",
+      "output": "```python\ndef calculate_sum(a: int, b: int) -> int:\n    \"\"\"Calculate the sum of two integers.\n\n    Args:\n        a (int): The first integer to add.\n        b (int): The second integer to add.\n\n    Returns:\n        int: The sum of the two integers.\n    \"\"\"\n    return a + b\n```",
+      "expected_output": "The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'a' and 'b'. 4. Include a 'Returns:' section describing the integer sum.",
+      "metadata": {},
+      "scores": [
+        {
+          "scorer_name": "exact_match",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Output does not exactly match expected",
+          "error": null,
+          "details": {
+            "output_length": 276,
+            "expected_length": 194,
+            "stripped_match": false
+          }
+        },
+        {
+          "scorer_name": "fuzzy_match",
+          "score": 0.41981132075471694,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Similarity score 0.42 below threshold 0.8",
+          "error": null,
+          "details": {
+            "algorithm": "token_sort_ratio",
+            "threshold": 0.8,
+            "raw_similarity": 41.98113207547169,
+            "all_scores": {
+              "ratio": 40.0,
+              "partial_ratio": 43.29896907216495,
+              "token_sort_ratio": 41.98113207547169,
+              "token_set_ratio": 41.40127388535032
+            }
+          }
+        },
+        {
+          "scorer_name": "LLM Judge",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": null,
+          "error": "user_prompt_template is missing in Eval Pack config for this stage.",
+          "details": {}
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "input": "def get_user_data(user_id: str) -> dict:",
+      "output": "```python\ndef get_user_data(user_id: str) -> dict:\n    \"\"\"Retrieve the user data for a given user ID.\n\n    Args:\n        user_id (str): The unique identifier of the user whose data is being retrieved.\n\n    Returns:\n        dict: A dictionary containing the user's data, including personal and account details.\n    \"\"\"\n```",
+      "expected_output": "The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'user_id'. 4. Include a 'Returns:' section describing the dictionary of user data.",
+      "metadata": {},
+      "scores": [
+        {
+          "scorer_name": "exact_match",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Output does not exactly match expected",
+          "error": null,
+          "details": {
+            "output_length": 321,
+            "expected_length": 204,
+            "stripped_match": false
+          }
+        },
+        {
+          "scorer_name": "fuzzy_match",
+          "score": 0.439918533604888,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Similarity score 0.44 below threshold 0.8",
+          "error": null,
+          "details": {
+            "algorithm": "token_sort_ratio",
+            "threshold": 0.8,
+            "raw_similarity": 43.9918533604888,
+            "all_scores": {
+              "ratio": 41.142857142857146,
+              "partial_ratio": 46.07843137254902,
+              "token_sort_ratio": 43.9918533604888,
+              "token_set_ratio": 44.81927710843374
+            }
+          }
+        },
+        {
+          "scorer_name": "LLM Judge",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": null,
+          "error": "user_prompt_template is missing in Eval Pack config for this stage.",
+          "details": {}
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "input": "def connect_to_database(connection_string: str, timeout: int = 30) -> bool:",
+      "output": "```python\ndef connect_to_database(connection_string: str, timeout: int = 30) -> bool:\n    \"\"\"Establish a connection to the database.\n\n    Args:\n        connection_string (str): A string containing the details required to connect to the database.\n        timeout (int, optional): The maximum time, in seconds, to wait for the connection. Defaults to 30.\n\n    Returns:\n        bool: True if the connection is successful, False otherwise.\n    \"\"\"\n```",
+      "expected_output": "The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'connection_string' and 'timeout'. 4. Include a 'Returns:' section describing the boolean connection status.",
+      "metadata": {},
+      "scores": [
+        {
+          "scorer_name": "exact_match",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Output does not exactly match expected",
+          "error": null,
+          "details": {
+            "output_length": 447,
+            "expected_length": 230,
+            "stripped_match": false
+          }
+        },
+        {
+          "scorer_name": "fuzzy_match",
+          "score": 0.3811023622047244,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Similarity score 0.38 below threshold 0.8",
+          "error": null,
+          "details": {
+            "algorithm": "token_sort_ratio",
+            "threshold": 0.8,
+            "raw_similarity": 38.11023622047244,
+            "all_scores": {
+              "ratio": 40.177252584933534,
+              "partial_ratio": 46.52173913043478,
+              "token_sort_ratio": 38.11023622047244,
+              "token_set_ratio": 40.150093808630395
+            }
+          }
+        },
+        {
+          "scorer_name": "LLM Judge",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": null,
+          "error": "user_prompt_template is missing in Eval Pack config for this stage.",
+          "details": {}
+        }
+      ]
+    },
+    {
+      "id": "4",
+      "input": "def process_text_file(file_path: str, encoding: str = 'utf-8') -> str:",
+      "output": "```python\ndef process_text_file(file_path: str, encoding: str = 'utf-8') -> str:\n    \"\"\"Processes a text file and returns its content as a string.\n\n    Args:\n        file_path (str): The path to the text file to be processed.\n        encoding (str): The encoding used to read the text file. Defaults to 'utf-8'.\n\n    Returns:\n        str: The processed text content of the file.\n    \"\"\"\n    # Function implementation goes here\n```",
+      "expected_output": "The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'file_path' and 'encoding'. 4. Include a 'Returns:' section describing the processed text content.",
+      "metadata": {},
+      "scores": [
+        {
+          "scorer_name": "exact_match",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Output does not exactly match expected",
+          "error": null,
+          "details": {
+            "output_length": 430,
+            "expected_length": 220,
+            "stripped_match": false
+          }
+        },
+        {
+          "scorer_name": "fuzzy_match",
+          "score": 0.41721854304635764,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Similarity score 0.42 below threshold 0.8",
+          "error": null,
+          "details": {
+            "algorithm": "token_sort_ratio",
+            "threshold": 0.8,
+            "raw_similarity": 41.72185430463576,
+            "all_scores": {
+              "ratio": 39.07692307692307,
+              "partial_ratio": 46.81818181818181,
+              "token_sort_ratio": 41.72185430463576,
+              "token_set_ratio": 43.60587002096436
+            }
+          }
+        },
+        {
+          "scorer_name": "LLM Judge",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": null,
+          "error": "user_prompt_template is missing in Eval Pack config for this stage.",
+          "details": {}
+        }
+      ]
+    },
+    {
+      "id": "5",
+      "input": "def normalize_vector(vector: list[float]) -> list[float]:",
+      "output": "```python\ndef normalize_vector(vector: list[float]) -> list[float]:\n    \"\"\"Normalize a vector to have a magnitude of 1.\n\n    Args:\n        vector (list[float]): A list of floats representing the vector to be normalized.\n\n    Returns:\n        list[float]: A list of floats representing the normalized vector, such that its magnitude is 1.\n    \"\"\"\n    magnitude = sum(x ** 2 for x in vector) ** 0.5\n    return [x / magnitude for x in vector] if magnitude != 0 else vector\n```",
+      "expected_output": "The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'vector'. 4. Include a 'Returns:' section describing the normalized vector.",
+      "metadata": {},
+      "scores": [
+        {
+          "scorer_name": "exact_match",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Output does not exactly match expected",
+          "error": null,
+          "details": {
+            "output_length": 473,
+            "expected_length": 197,
+            "stripped_match": false
+          }
+        },
+        {
+          "scorer_name": "fuzzy_match",
+          "score": 0.37579617834394907,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Similarity score 0.38 below threshold 0.8",
+          "error": null,
+          "details": {
+            "algorithm": "token_sort_ratio",
+            "threshold": 0.8,
+            "raw_similarity": 37.57961783439491,
+            "all_scores": {
+              "ratio": 33.73134328358209,
+              "partial_ratio": 47.20812182741116,
+              "token_sort_ratio": 37.57961783439491,
+              "token_set_ratio": 39.647577092511014
+            }
+          }
+        },
+        {
+          "scorer_name": "LLM Judge",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": null,
+          "error": "user_prompt_template is missing in Eval Pack config for this stage.",
+          "details": {}
+        }
+      ]
+    },
+    {
+      "id": "6",
+      "input": "def send_email(recipient: str, subject: str, body: str):",
+      "output": "```python\ndef send_email(recipient: str, subject: str, body: str):\n    \"\"\"Send an email with the specified subject and body to the recipient.\n\n    Args:\n        recipient (str): The email address of the recipient.\n        subject (str): The subject line of the email.\n        body (str): The content of the email message.\n    \"\"\"\n    # Function implementation here\n```",
+      "expected_output": "The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'recipient', 'subject', and 'body'. 4. Not include a 'Returns:' section as the function returns None.",
+      "metadata": {},
+      "scores": [
+        {
+          "scorer_name": "exact_match",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Output does not exactly match expected",
+          "error": null,
+          "details": {
+            "output_length": 368,
+            "expected_length": 223,
+            "stripped_match": false
+          }
+        },
+        {
+          "scorer_name": "fuzzy_match",
+          "score": 0.3781818181818182,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Similarity score 0.38 below threshold 0.8",
+          "error": null,
+          "details": {
+            "algorithm": "token_sort_ratio",
+            "threshold": 0.8,
+            "raw_similarity": 37.81818181818182,
+            "all_scores": {
+              "ratio": 38.917089678511,
+              "partial_ratio": 42.85714285714286,
+              "token_sort_ratio": 37.81818181818182,
+              "token_set_ratio": 40.189125295508276
+            }
+          }
+        },
+        {
+          "scorer_name": "LLM Judge",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": null,
+          "error": "user_prompt_template is missing in Eval Pack config for this stage.",
+          "details": {}
+        }
+      ]
+    },
+    {
+      "id": "7",
+      "input": "def is_palindrome(s: str) -> bool:",
+      "output": "```python\ndef is_palindrome(s: str) -> bool:\n    \"\"\"Check if a given string is a palindrome.\n\n    Args:\n        s (str): The string to be checked.\n\n    Returns:\n        bool: True if the string is a palindrome, False otherwise.\n    \"\"\"\n    return s == s[::-1]\n```",
+      "expected_output": "The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 's'. 4. Include a 'Returns:' section describing the boolean result.",
+      "metadata": {},
+      "scores": [
+        {
+          "scorer_name": "exact_match",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Output does not exactly match expected",
+          "error": null,
+          "details": {
+            "output_length": 263,
+            "expected_length": 189,
+            "stripped_match": false
+          }
+        },
+        {
+          "scorer_name": "fuzzy_match",
+          "score": 0.42028985507246375,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Similarity score 0.42 below threshold 0.8",
+          "error": null,
+          "details": {
+            "algorithm": "token_sort_ratio",
+            "threshold": 0.8,
+            "raw_similarity": 42.028985507246375,
+            "all_scores": {
+              "ratio": 38.495575221238944,
+              "partial_ratio": 43.05177111716622,
+              "token_sort_ratio": 42.028985507246375,
+              "token_set_ratio": 40.35608308605341
+            }
+          }
+        },
+        {
+          "scorer_name": "LLM Judge",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": null,
+          "error": "user_prompt_template is missing in Eval Pack config for this stage.",
+          "details": {}
+        }
+      ]
+    },
+    {
+      "id": "8",
+      "input": "def merge_dictionaries(d1: dict, d2: dict) -> dict:",
+      "output": "```python\ndef merge_dictionaries(d1: dict, d2: dict) -> dict:\n    \"\"\"Merge two dictionaries into one.\n\n    Args:\n        d1 (dict): The first dictionary to merge.\n        d2 (dict): The second dictionary to merge.\n\n    Returns:\n        dict: A new dictionary containing all key-value pairs from both d1 and d2. If a key exists in both dictionaries, the value from d2 will be used.\n    \"\"\"\n    merged_dict = d1.copy()  # Start with a copy of d1 to ensure the original is not modified\n    merged_dict.update(d2)   # Update with key-value pairs from d2\n    return merged_dict\n```",
+      "expected_output": "The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'd1' and 'd2'. 4. Include a 'Returns:' section describing the merged dictionary.",
+      "metadata": {},
+      "scores": [
+        {
+          "scorer_name": "exact_match",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Output does not exactly match expected",
+          "error": null,
+          "details": {
+            "output_length": 576,
+            "expected_length": 202,
+            "stripped_match": false
+          }
+        },
+        {
+          "scorer_name": "fuzzy_match",
+          "score": 0.3411927877947295,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Similarity score 0.34 below threshold 0.8",
+          "error": null,
+          "details": {
+            "algorithm": "token_sort_ratio",
+            "threshold": 0.8,
+            "raw_similarity": 34.11927877947295,
+            "all_scores": {
+              "ratio": 31.362467866323907,
+              "partial_ratio": 43.069306930693074,
+              "token_sort_ratio": 34.11927877947295,
+              "token_set_ratio": 36.166365280289334
+            }
+          }
+        },
+        {
+          "scorer_name": "LLM Judge",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": null,
+          "error": "user_prompt_template is missing in Eval Pack config for this stage.",
+          "details": {}
+        }
+      ]
+    },
+    {
+      "id": "9",
+      "input": "def find_prime_numbers(limit: int) -> list[int]:",
+      "output": "```python\ndef find_prime_numbers(limit: int) -> list[int]:\n    \"\"\"Finds all prime numbers up to a specified limit.\n\n    Args:\n        limit (int): The upper boundary for generating prime numbers. Must be greater than 1.\n\n    Returns:\n        list[int]: A list containing all prime numbers less than or equal to the specified limit.\n    \"\"\"\n    # Function implementation would go here\n```",
+      "expected_output": "The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'limit'. 4. Include a 'Returns:' section describing the list of prime numbers.",
+      "metadata": {},
+      "scores": [
+        {
+          "scorer_name": "exact_match",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Output does not exactly match expected",
+          "error": null,
+          "details": {
+            "output_length": 387,
+            "expected_length": 200,
+            "stripped_match": false
+          }
+        },
+        {
+          "scorer_name": "fuzzy_match",
+          "score": 0.42622950819672134,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Similarity score 0.43 below threshold 0.8",
+          "error": null,
+          "details": {
+            "algorithm": "token_sort_ratio",
+            "threshold": 0.8,
+            "raw_similarity": 42.622950819672134,
+            "all_scores": {
+              "ratio": 37.137989778534916,
+              "partial_ratio": 44.050632911392405,
+              "token_sort_ratio": 42.622950819672134,
+              "token_set_ratio": 43.43891402714932
+            }
+          }
+        },
+        {
+          "scorer_name": "LLM Judge",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": null,
+          "error": "user_prompt_template is missing in Eval Pack config for this stage.",
+          "details": {}
+        }
+      ]
+    },
+    {
+      "id": "10",
+      "input": "def sort_list_of_tuples(data: list[tuple], sort_key_index: int) -> list[tuple]:",
+      "output": "```python\ndef sort_list_of_tuples(data: list[tuple], sort_key_index: int) -> list[tuple]:\n    \"\"\"Sorts a list of tuples based on a specified index within the tuples.\n\n    Args:\n        data (list[tuple]): A list of tuples to be sorted.\n        sort_key_index (int): The index of the tuple element to sort by.\n\n    Returns:\n        list[tuple]: A new list of tuples sorted by the specified index.\n    \"\"\"\n    return sorted(data, key=lambda x: x[sort_key_index])\n```",
+      "expected_output": "The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'data' and 'sort_key_index'. 4. Include a 'Returns:' section describing the sorted list.",
+      "metadata": {},
+      "scores": [
+        {
+          "scorer_name": "exact_match",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Output does not exactly match expected",
+          "error": null,
+          "details": {
+            "output_length": 464,
+            "expected_length": 210,
+            "stripped_match": false
+          }
+        },
+        {
+          "scorer_name": "fuzzy_match",
+          "score": 0.3375796178343949,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Similarity score 0.34 below threshold 0.8",
+          "error": null,
+          "details": {
+            "algorithm": "token_sort_ratio",
+            "threshold": 0.8,
+            "raw_similarity": 33.75796178343949,
+            "all_scores": {
+              "ratio": 35.311572700296736,
+              "partial_ratio": 41.9047619047619,
+              "token_sort_ratio": 33.75796178343949,
+              "token_set_ratio": 37.301587301587304
+            }
+          }
+        },
+        {
+          "scorer_name": "LLM Judge",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": null,
+          "error": "user_prompt_template is missing in Eval Pack config for this stage.",
+          "details": {}
+        }
+      ]
+    },
+    {
+      "id": "11",
+      "input": "def remove_duplicates_from_list(items: list) -> list:",
+      "output": "```python\ndef remove_duplicates_from_list(items: list) -> list:\n    \"\"\"Remove duplicate elements from a list.\n\n    Args:\n        items (list): A list of elements which may contain duplicates.\n\n    Returns:\n        list: A list with duplicate elements removed, preserving the order of first occurrences.\n    \"\"\"\n    seen = set()\n    unique_items = []\n    for item in items:\n        if item not in seen:\n            unique_items.append(item)\n            seen.add(item)\n    return unique_items\n```",
+      "expected_output": "The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'items'. 4. Include a 'Returns:' section describing the list with duplicates removed.",
+      "metadata": {},
+      "scores": [
+        {
+          "scorer_name": "exact_match",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Output does not exactly match expected",
+          "error": null,
+          "details": {
+            "output_length": 494,
+            "expected_length": 207,
+            "stripped_match": false
+          }
+        },
+        {
+          "scorer_name": "fuzzy_match",
+          "score": 0.35864297253634886,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Similarity score 0.36 below threshold 0.8",
+          "error": null,
+          "details": {
+            "algorithm": "token_sort_ratio",
+            "threshold": 0.8,
+            "raw_similarity": 35.86429725363489,
+            "all_scores": {
+              "ratio": 31.09843081312411,
+              "partial_ratio": 46.85990338164251,
+              "token_sort_ratio": 35.86429725363489,
+              "token_set_ratio": 37.721021611001966
+            }
+          }
+        },
+        {
+          "scorer_name": "LLM Judge",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": null,
+          "error": "user_prompt_template is missing in Eval Pack config for this stage.",
+          "details": {}
+        }
+      ]
+    },
+    {
+      "id": "12",
+      "input": "def calculate_factorial(n: int) -> int:",
+      "output": "```python\ndef calculate_factorial(n: int) -> int:\n    \"\"\"Calculate the factorial of a given number.\n\n    Args:\n        n (int): A non-negative integer for which to calculate the factorial.\n\n    Returns:\n        int: The factorial of the given number. If n is 0, returns 1 as 0! is defined as 1.\n    \"\"\"\n    if n < 0:\n        raise ValueError(\"Negative values are not allowed.\")\n    factorial = 1\n    for i in range(1, n + 1):\n        factorial *= i\n    return factorial\n```",
+      "expected_output": "The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'n'. 4. Include a 'Returns:' section describing the factorial result.",
+      "metadata": {},
+      "scores": [
+        {
+          "scorer_name": "exact_match",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Output does not exactly match expected",
+          "error": null,
+          "details": {
+            "output_length": 473,
+            "expected_length": 191,
+            "stripped_match": false
+          }
+        },
+        {
+          "scorer_name": "fuzzy_match",
+          "score": 0.34448160535117056,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": "Similarity score 0.34 below threshold 0.8",
+          "error": null,
+          "details": {
+            "algorithm": "token_sort_ratio",
+            "threshold": 0.8,
+            "raw_similarity": 34.448160535117054,
+            "all_scores": {
+              "ratio": 32.831325301204814,
+              "partial_ratio": 43.97905759162304,
+              "token_sort_ratio": 34.448160535117054,
+              "token_set_ratio": 37.11790393013101
+            }
+          }
+        },
+        {
+          "scorer_name": "LLM Judge",
+          "score": 0.0,
+          "score_type": "float",
+          "numeric_score": null,
+          "passed": false,
+          "reasoning": null,
+          "error": "user_prompt_template is missing in Eval Pack config for this stage.",
+          "details": {}
+        }
+      ]
+    }
+  ],
+  "config": {
+    "eval_pack": {
+      "schema_version": "1.0",
+      "name": "Legacy UI Configuration",
+      "version": "1.0",
+      "description": "Automatically generated from legacy UI selections",
+      "author": "Legacy UI",
+      "generation": null,
+      "ingestion": {
+        "type": "json",
+        "parser": null,
+        "config": {}
+      },
+      "pipeline": [
+        {
+          "name": "exact_match_stage",
+          "scorer": "exact_match",
+          "config": {},
+          "on_fail": "continue",
+          "run_if": null,
+          "span_kind": null
+        },
+        {
+          "name": "fuzzy_match_stage",
+          "scorer": "fuzzy_match",
+          "config": {},
+          "on_fail": "continue",
+          "run_if": null,
+          "span_kind": null
+        },
+        {
+          "name": "llm_judge_stage",
+          "scorer": "llm_judge",
+          "config": {
+            "api_key": "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"
+          },
+          "on_fail": "continue",
+          "run_if": null,
+          "span_kind": null
+        }
+      ],
+      "reporting": null,
+      "metadata": {
+        "source": "legacy_ui",
+        "auto_generated": true,
+        "selected_scorers": [
+          "exact_match",
+          "fuzzy_match",
+          "llm_judge"
+        ]
+      }
+    },
+    "batch_size": 10,
+    "privacy_settings": {}
+  },
+  "summary_stats": {
+    "exact_match": {
+      "total": 12,
+      "passed": 0,
+      "failed": 12,
+      "errors": 0,
+      "accuracy": 0.0,
+      "average_score": 0.0,
+      "min_score": 0.0,
+      "max_score": 0.0
+    },
+    "fuzzy_match": {
+      "total": 12,
+      "passed": 0,
+      "failed": 12,
+      "errors": 0,
+      "accuracy": 0.0,
+      "average_score": 0.38670375857685696,
+      "min_score": 0.3375796178343949,
+      "max_score": 0.439918533604888,
+      "score_distribution": {
+        "0.0-0.2": 0,
+        "0.2-0.4": 7,
+        "0.4-0.6": 5,
+        "0.6-0.8": 0,
+        "0.8-1.0": 0
+      }
+    },
+    "LLM Judge": {
+      "total": 12,
+      "passed": 0,
+      "failed": 0,
+      "errors": 12,
+      "accuracy": 0.0,
+      "average_score": 0.0,
+      "min_score": 0.0,
+      "max_score": 0.0
+    }
+  },
+  "metadata": {
+    "execution_time_seconds": 0.002495,
+    "start_time_utc": "2025-07-27T23:27:12.534776",
+    "end_time_utc": "2025-07-27T23:27:12.537271",
+    "total_items": 12,
+    "total_stages": 3,
+    "eval_pack_metadata": {
+      "source": "legacy_ui",
+      "auto_generated": true,
+      "selected_scorers": [
+        "exact_match",
+        "fuzzy_match",
+        "llm_judge"
+      ]
+    }
+  }
+}

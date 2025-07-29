@@ -74,6 +74,15 @@ Respond in JSON format:
     "reasoning": "explanation",
     "errors": ["error1", "error2"] or []
 }""",
+        "user_prompt_template": """Compare the actual output to the expected output for the given input.
+
+Input: {{ input }}
+Expected Output: {{ expected_output }}
+Actual Output: {{ output }}
+
+Respond in JSON format with:
+- "score": 0.0 to 1.0
+- "reasoning": explanation of your evaluation""",
     }
 
 judge_config = st.session_state.model_configs["default_judge_config"]

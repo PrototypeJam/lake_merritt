@@ -1,0 +1,161 @@
+id,input,output,expected_output,LLM Judge_score,LLM Judge_passed,LLM Judge_reasoning,LLM Judge_error,exact_match_score,exact_match_passed,exact_match_reasoning,exact_match_error,fuzzy_match_score,fuzzy_match_passed,fuzzy_match_reasoning,fuzzy_match_error
+1,"def calculate_sum(a: int, b: int) -> int:","```python
+def calculate_sum(a: int, b: int) -> int:
+    """"""Calculate the sum of two integers.
+
+    Args:
+        a (int): The first integer to add.
+        b (int): The second integer to add.
+
+    Returns:
+        int: The sum of the two integers.
+    """"""
+    return a + b
+```",The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'a' and 'b'. 4. Include a 'Returns:' section describing the integer sum.,0.0,False,,user_prompt_template is missing in Eval Pack config for this stage.,0.0,False,Output does not exactly match expected,,0.41981132075471694,False,Similarity score 0.42 below threshold 0.8,
+2,def get_user_data(user_id: str) -> dict:,"```python
+def get_user_data(user_id: str) -> dict:
+    """"""Retrieve the user data for a given user ID.
+
+    Args:
+        user_id (str): The unique identifier of the user whose data is being retrieved.
+
+    Returns:
+        dict: A dictionary containing the user's data, including personal and account details.
+    """"""
+```",The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'user_id'. 4. Include a 'Returns:' section describing the dictionary of user data.,0.0,False,,user_prompt_template is missing in Eval Pack config for this stage.,0.0,False,Output does not exactly match expected,,0.439918533604888,False,Similarity score 0.44 below threshold 0.8,
+3,"def connect_to_database(connection_string: str, timeout: int = 30) -> bool:","```python
+def connect_to_database(connection_string: str, timeout: int = 30) -> bool:
+    """"""Establish a connection to the database.
+
+    Args:
+        connection_string (str): A string containing the details required to connect to the database.
+        timeout (int, optional): The maximum time, in seconds, to wait for the connection. Defaults to 30.
+
+    Returns:
+        bool: True if the connection is successful, False otherwise.
+    """"""
+```",The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'connection_string' and 'timeout'. 4. Include a 'Returns:' section describing the boolean connection status.,0.0,False,,user_prompt_template is missing in Eval Pack config for this stage.,0.0,False,Output does not exactly match expected,,0.3811023622047244,False,Similarity score 0.38 below threshold 0.8,
+4,"def process_text_file(file_path: str, encoding: str = 'utf-8') -> str:","```python
+def process_text_file(file_path: str, encoding: str = 'utf-8') -> str:
+    """"""Processes a text file and returns its content as a string.
+
+    Args:
+        file_path (str): The path to the text file to be processed.
+        encoding (str): The encoding used to read the text file. Defaults to 'utf-8'.
+
+    Returns:
+        str: The processed text content of the file.
+    """"""
+    # Function implementation goes here
+```",The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'file_path' and 'encoding'. 4. Include a 'Returns:' section describing the processed text content.,0.0,False,,user_prompt_template is missing in Eval Pack config for this stage.,0.0,False,Output does not exactly match expected,,0.41721854304635764,False,Similarity score 0.42 below threshold 0.8,
+5,def normalize_vector(vector: list[float]) -> list[float]:,"```python
+def normalize_vector(vector: list[float]) -> list[float]:
+    """"""Normalize a vector to have a magnitude of 1.
+
+    Args:
+        vector (list[float]): A list of floats representing the vector to be normalized.
+
+    Returns:
+        list[float]: A list of floats representing the normalized vector, such that its magnitude is 1.
+    """"""
+    magnitude = sum(x ** 2 for x in vector) ** 0.5
+    return [x / magnitude for x in vector] if magnitude != 0 else vector
+```",The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'vector'. 4. Include a 'Returns:' section describing the normalized vector.,0.0,False,,user_prompt_template is missing in Eval Pack config for this stage.,0.0,False,Output does not exactly match expected,,0.37579617834394907,False,Similarity score 0.38 below threshold 0.8,
+6,"def send_email(recipient: str, subject: str, body: str):","```python
+def send_email(recipient: str, subject: str, body: str):
+    """"""Send an email with the specified subject and body to the recipient.
+
+    Args:
+        recipient (str): The email address of the recipient.
+        subject (str): The subject line of the email.
+        body (str): The content of the email message.
+    """"""
+    # Function implementation here
+```","The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'recipient', 'subject', and 'body'. 4. Not include a 'Returns:' section as the function returns None.",0.0,False,,user_prompt_template is missing in Eval Pack config for this stage.,0.0,False,Output does not exactly match expected,,0.3781818181818182,False,Similarity score 0.38 below threshold 0.8,
+7,def is_palindrome(s: str) -> bool:,"```python
+def is_palindrome(s: str) -> bool:
+    """"""Check if a given string is a palindrome.
+
+    Args:
+        s (str): The string to be checked.
+
+    Returns:
+        bool: True if the string is a palindrome, False otherwise.
+    """"""
+    return s == s[::-1]
+```",The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 's'. 4. Include a 'Returns:' section describing the boolean result.,0.0,False,,user_prompt_template is missing in Eval Pack config for this stage.,0.0,False,Output does not exactly match expected,,0.42028985507246375,False,Similarity score 0.42 below threshold 0.8,
+8,"def merge_dictionaries(d1: dict, d2: dict) -> dict:","```python
+def merge_dictionaries(d1: dict, d2: dict) -> dict:
+    """"""Merge two dictionaries into one.
+
+    Args:
+        d1 (dict): The first dictionary to merge.
+        d2 (dict): The second dictionary to merge.
+
+    Returns:
+        dict: A new dictionary containing all key-value pairs from both d1 and d2. If a key exists in both dictionaries, the value from d2 will be used.
+    """"""
+    merged_dict = d1.copy()  # Start with a copy of d1 to ensure the original is not modified
+    merged_dict.update(d2)   # Update with key-value pairs from d2
+    return merged_dict
+```",The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'd1' and 'd2'. 4. Include a 'Returns:' section describing the merged dictionary.,0.0,False,,user_prompt_template is missing in Eval Pack config for this stage.,0.0,False,Output does not exactly match expected,,0.3411927877947295,False,Similarity score 0.34 below threshold 0.8,
+9,def find_prime_numbers(limit: int) -> list[int]:,"```python
+def find_prime_numbers(limit: int) -> list[int]:
+    """"""Finds all prime numbers up to a specified limit.
+
+    Args:
+        limit (int): The upper boundary for generating prime numbers. Must be greater than 1.
+
+    Returns:
+        list[int]: A list containing all prime numbers less than or equal to the specified limit.
+    """"""
+    # Function implementation would go here
+```",The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'limit'. 4. Include a 'Returns:' section describing the list of prime numbers.,0.0,False,,user_prompt_template is missing in Eval Pack config for this stage.,0.0,False,Output does not exactly match expected,,0.42622950819672134,False,Similarity score 0.43 below threshold 0.8,
+10,"def sort_list_of_tuples(data: list[tuple], sort_key_index: int) -> list[tuple]:","```python
+def sort_list_of_tuples(data: list[tuple], sort_key_index: int) -> list[tuple]:
+    """"""Sorts a list of tuples based on a specified index within the tuples.
+
+    Args:
+        data (list[tuple]): A list of tuples to be sorted.
+        sort_key_index (int): The index of the tuple element to sort by.
+
+    Returns:
+        list[tuple]: A new list of tuples sorted by the specified index.
+    """"""
+    return sorted(data, key=lambda x: x[sort_key_index])
+```",The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'data' and 'sort_key_index'. 4. Include a 'Returns:' section describing the sorted list.,0.0,False,,user_prompt_template is missing in Eval Pack config for this stage.,0.0,False,Output does not exactly match expected,,0.3375796178343949,False,Similarity score 0.34 below threshold 0.8,
+11,def remove_duplicates_from_list(items: list) -> list:,"```python
+def remove_duplicates_from_list(items: list) -> list:
+    """"""Remove duplicate elements from a list.
+
+    Args:
+        items (list): A list of elements which may contain duplicates.
+
+    Returns:
+        list: A list with duplicate elements removed, preserving the order of first occurrences.
+    """"""
+    seen = set()
+    unique_items = []
+    for item in items:
+        if item not in seen:
+            unique_items.append(item)
+            seen.add(item)
+    return unique_items
+```",The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'items'. 4. Include a 'Returns:' section describing the list with duplicates removed.,0.0,False,,user_prompt_template is missing in Eval Pack config for this stage.,0.0,False,Output does not exactly match expected,,0.35864297253634886,False,Similarity score 0.36 below threshold 0.8,
+12,def calculate_factorial(n: int) -> int:,"```python
+def calculate_factorial(n: int) -> int:
+    """"""Calculate the factorial of a given number.
+
+    Args:
+        n (int): A non-negative integer for which to calculate the factorial.
+
+    Returns:
+        int: The factorial of the given number. If n is 0, returns 1 as 0! is defined as 1.
+    """"""
+    if n < 0:
+        raise ValueError(""Negative values are not allowed."")
+    factorial = 1
+    for i in range(1, n + 1):
+        factorial *= i
+    return factorial
+```",The docstring must: 1. Be in Google Python Style. 2. Include a one-line summary. 3. Include an 'Args:' section describing 'n'. 4. Include a 'Returns:' section describing the factorial result.,0.0,False,,user_prompt_template is missing in Eval Pack config for this stage.,0.0,False,Output does not exactly match expected,,0.34448160535117056,False,Similarity score 0.34 below threshold 0.8,

@@ -10,11 +10,15 @@ import pandas as pd
 
 from core.data_models import (EvaluationItem, EvaluationResults, RunMetadata,
                               ScorerConfig, EvaluationMode)
+# FIX: Import all necessary components for the new workflow
 from core.eval_pack import (EvalPackV1, PipelineExecutor, create_legacy_pack,
                             extract_scorer_configs, extract_selected_scorers)
 from core.scoring import create_scorer, get_available_scorers
 from core.ingestion import CSVIngester
 from core.registry import ComponentRegistry
+from core.eval_pack.schema import GenerationMode # <-- Import GenerationMode
+from core.generation_handler import handle_mode_b_generation # <-- Import the handler
+
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +74,7 @@ async def run_evaluation_batch(
     progress_callback: Optional[Callable[[int, int], None]] = None,
     pack: Optional[Union[EvalPackV1, Dict[str, Any]]] = None,
     mode: EvaluationMode = EvaluationMode.EVALUATE_EXISTING,
+    user_context: Optional[str] = None, # <-- Add user_context parameter
 ) -> EvaluationResults:
     """
     Ingest data (if needed) and run a pack-based evaluation, preserving the
@@ -108,7 +113,38 @@ async def run_evaluation_batch(
         eval_pack.ingestion.config = {"mode": mode.value}
 
     # ------------------------------------------------------------------
-    # 2. Ingest raw data if the caller passed a file / DataFrame
+    # 2. Handle Generation (Mode B) if specified in the pack
+    # ------------------------------------------------------------------
+    # FIX: Add the branching logic for Mode B generation when using an Eval Pack.
+    if eval_pack.generation and raw_data is not None:
+        if not user_context:
+            raise ValueError("User context is required for generation but was not provided.")
+        
+        logger.info("Pack has a 'generation' block. Running Mode B workflow.")
+        
+        items, generation_metadata = await handle_mode_b_generation(
+            raw_data=raw_data,
+            generation_config=eval_pack.generation,
+            user_context=user_context,
+            api_keys=api_keys or {},
+            progress_callback=progress_callback,
+        )
+        
+        # If the goal was just to create a dataset, stop here and return the results.
+        if eval_pack.generation.mode == GenerationMode.GENERATE_EXPECTED_OUTPUTS:
+            logger.info("Mode B 'Generate Expected Outputs' complete. Returning generated data without scoring.")
+            return EvaluationResults(
+                items=items,
+                config={"eval_pack": eval_pack.model_dump(mode='json'), **generation_metadata},
+                metadata={"mode": "generate_expected_outputs", "total_items": len(items)}
+            )
+        
+        # Otherwise, the generated items will proceed to the scoring pipeline.
+        logger.info("Mode B 'Generate Outputs' complete. Proceeding to evaluation.")
+        raw_data = None # Prevent re-ingestion in the next step
+
+    # ------------------------------------------------------------------
+    # 3. Ingest raw data if it hasn't been generated
     # ------------------------------------------------------------------
     if raw_data is not None:
         logger.info("Ingesting raw data before evaluation")
@@ -138,7 +174,7 @@ async def run_evaluation_batch(
         raise ValueError("Either 'raw_data' or 'items' must be provided")
 
     # ------------------------------------------------------------------
-    # 3. Delegate to the existing implementation
+    # 4. Delegate to the scoring implementation
     # ------------------------------------------------------------------
     return await _run_evaluation_batch_impl(
         items=items,

@@ -1,0 +1,176 @@
+##########################################################################################
+# Generalized Agento Lifecycle Evaluation - Lake Merritt Teaching Example Eval Pack
+#
+# This YAML file defines a multi-stage evaluation workflow ("Eval Pack") for Lake Merritt,
+# demonstrating how to judge each step of a multi-agent workflow, using semantic metadata
+# from OTEL traces. The pack is deeply commented to help newcomers understand every part.
+#
+# TO USE: Replace the ingestion config (if needed) and run in your Lake Merritt instance.
+##########################################################################################
+
+# ---- BASIC PACK METADATA ----
+schema_version: "1.0"                # Always include the schema version for forward compatibility.
+name: "Generalized Agento Lifecycle Evaluation"
+version: "2.1"
+description: >
+  A reusable evaluation pack that judges the quality of each step in a multi-module
+  Agento workflow by leveraging semantic OTEL attributes.
+  # The "description" helps users understand the intent and scope of the eval pack.
+
+# ---- INGESTION CONFIGURATION ----
+# This section tells Lake Merritt how to load and parse your data for evaluation.
+ingestion:
+  type: "python"                     # Type can be 'python' (for OTEL, custom) or 'csv' (for tabular data).
+  config:
+    script_path: "core/ingestion/agento_generalized_ingester.py" # Path to your custom ingestion script.
+    entry_function: "ingest_agento_trace"                        # Entry-point function for trace ingestion.
+    trace_file: "placeholder_for_ui_upload.otlp.json"            # Placeholder; replaced via UI at runtime.
+
+# ---- PIPELINE: DEFINE YOUR EVALUATION STAGES ----
+# Each pipeline stage represents one logical evaluation (e.g., plan, draft, critique, etc.).
+# Each stage is conditionally triggered using the 'run_if' clause based on item metadata.
+pipeline:
+
+  #########################################################################
+  # STAGE 1: Judge the Initial Plan
+  # Evaluates the quality of the plan generated in the first module.
+  #########################################################################
+  - name: "judge_initial_plan"                         # Unique stage name (used in reports).
+    scorer: "llm_judge"                                # Which scorer to use (see registry).
+    run_if: "metadata['step_type'] == 'plan'"          # Only run this stage for items tagged as 'plan'.
+    config:
+      provider: "openai"                               # Which LLM provider to use.
+      model: "gpt-4o"                                  # LLM model name.
+      threshold: 0.8                                   # Minimum score to 'pass' (0.0 to 1.0).
+      system_prompt: |                                 # SYSTEM PROMPT: Set the LLM's "persona" and instructions.
+        You are an expert project manager. Evaluate if the provided project plan is a sound and comprehensive response to the user's goal. Return JSON with "score" (0-1) and "reasoning".
+      user_prompt_template: |                          # USER PROMPT: Rendered with item fields via Jinja2.
+        ### User's Goal:
+        {{ input }}
+        ### Agent's Generated Plan:
+        {{ output }}
+        ### Your Task: Evaluate the plan's quality and alignment with the goal.
+
+  #########################################################################
+  # STAGE 2: Judge Step Drafts
+  # Evaluates the draft for each project step, using both the overall goal and step-specific criteria.
+  #########################################################################
+  - name: "judge_step_draft"
+    scorer: "llm_judge"
+    run_if: "metadata['step_type'] == 'draft'"
+    config:
+      provider: "openai"
+      model: "gpt-4o"
+      threshold: 0.7
+      system_prompt: |
+        You are an expert evaluator. Assess if the draft for step '{{ metadata.step_name | default('UNKNOWN') }}' faithfully implements its instructions and criteria. Return JSON with "score" and "reasoning".
+      user_prompt_template: |
+        ### Overall User Goal:
+        {{ metadata.user_goal | default('No user goal provided.') }}
+        ### Instructions & Criteria for this Step:
+        {{ expected_output | default('No criteria provided.') }}
+        ### Agent's Draft for '{{ metadata.step_name | default('UNKNOWN') }}':
+        {{ output }}
+        ### Your Task: Evaluate how well the draft fulfills its specific instructions.
+
+  #########################################################################
+  # STAGE 3: Judge Critiques
+  # Evaluates critiques generated for each step, asking the LLM to judge their value.
+  #########################################################################
+  - name: "judge_step_critique"
+    scorer: "llm_judge"
+    run_if: "metadata['step_type'] == 'critique'"
+    config:
+      provider: "openai"
+      model: "gpt-4o"
+      threshold: 0.8
+      system_prompt: |
+        You are an expert at providing constructive feedback. Evaluate if the critique for '{{ metadata.step_name | default('UNKNOWN') }}' is insightful and actionable. Return JSON with "score" and "reasoning".
+      user_prompt_template: |
+        ### Overall User Goal:
+        {{ metadata.user_goal | default('No user goal provided.') }}
+        ### Original Draft for '{{ metadata.step_name | default('UNKNOWN') }}' (to be critiqued):
+        {{ input }}
+        ### Agent's Critique of the Draft:
+        {{ output }}
+        ### Your Task: Evaluate the quality of the critique. Is it valuable?
+
+  #########################################################################
+  # STAGE 4: Judge Accepted Revisions
+  # Evaluates whether final, accepted revisions successfully implemented all requested changes.
+  #########################################################################
+  - name: "judge_accepted_revision"
+    scorer: "llm_judge"
+    run_if: "metadata['step_type'] == 'accepted_revision'"
+    config:
+      provider: "openai"
+      model: "gpt-4o"
+      threshold: 0.8
+      system_prompt: |
+        You are a quality assurance expert. Evaluate if the final revised content successfully and completely implements the requested revisions. Return JSON with "score" (0-1) and "reasoning".
+      user_prompt_template: |
+        ### Step Name:
+        {{ metadata.step_name | default('UNKNOWN') }}
+        ### Original Revision Request:
+        {{ input }}
+        ### Final Accepted Content:
+        {{ output }}
+        ### Your Task: Did the final content successfully address the revision request?
+
+  #########################################################################
+  # STAGE 5: Judge Timed-Out Revisions
+  # Evaluates cases where revisions were attempted but the process got "stuck" or timed out.
+  #########################################################################
+  - name: "judge_timed_out_revision"
+    scorer: "llm_judge"
+    run_if: "metadata['step_type'] == 'timed_out_revision'"
+    config:
+      provider: "openai"
+      model: "gpt-4o"
+      threshold: 0.5                           # Lower threshold for partial success in failure analysis.
+      system_prompt: |
+        You are a senior agent architect analyzing a failed revision attempt. The process timed out. Evaluate the final state. Return JSON with "score" (0-1), "reasoning", "strengths" of the last draft, and "weaknesses" of the final critique.
+      user_prompt_template: |
+        ### Step Name:
+        {{ metadata.step_name | default('UNKNOWN') }}
+        ### Original Revision Request:
+        {{ input }}
+        ### Last Attempted Draft (before timeout):
+        {{ output }}
+        ### Final Critique (that caused the loop to continue):
+        {{ metadata.final_critique | default('N/A') }}
+        ### Your Task: Analyze this failed state.
+
+  #########################################################################
+  # STAGE 6: Judge Holistic Final Plan
+  # Evaluates the final, holistic project plan for overall coherence and readiness for delivery.
+  #########################################################################
+  - name: "judge_holistic_final_plan"
+    scorer: "llm_judge"
+    run_if: "metadata['step_type'] == 'holistic_review'"
+    config:
+      provider: "openai"
+      model: "gpt-4o"
+      threshold: 0.8
+      system_prompt: |
+        You are the lead project manager. Review the entire final project plan for quality, coherence, and alignment with the original user goal. Return JSON with "score" (0-1) and "reasoning".
+      user_prompt_template: |
+        ### Original User Goal:
+        {{ metadata.user_goal | default('No user goal provided.') }}
+        ### Final Revised Project Plan (JSON):
+        {{ output }}
+        ### Your Task: Provide a holistic, final verdict on the quality of the entire plan.
+
+##########################################################################################
+# KEY TEACHING POINTS FOR NEW USERS/CONTRIBUTORS
+#
+# - Each pipeline stage is *conditionally* run for only items matching the 'run_if' clause.
+# - All prompts use robust Jinja2 templating for dynamic, per-item input and metadata.
+# - Use '| default("...")' to provide fallback values if a field might be missing.
+# - You can change 'scorer' to 'structured_llm_judge' (if registered) for schema-enforced LLM output.
+# - All configuration is *per-stage* and can be fine-tuned as needed (model, provider, threshold, etc.).
+# - Each system prompt *instructs the LLM to return JSON*; your backend will extract and score using this.
+# - Add more stages, or split/merge stages, as fits your application workflow.
+# - To adapt this for a new use case, copy and revise: change run_if logic, prompts, models, or scorer.
+# - Your ingestion script must emit metadata fields referenced here (step_type, step_name, user_goal, etc.).
+##########################################################################################

@@ -69,6 +69,20 @@ class LLMJudgeScorer(BaseScorer):
             "You are an expert evaluator. "
             "Respond ONLY in valid JSON with \"score\" (0.0-1.0) and \"reasoning\" fields."
         )
+    
+    def _default_user_prompt_template(self) -> str:
+        """Provides a default user prompt for backward compatibility."""
+        return """
+Compare the actual output to the expected output for the given input.
+
+Input: {{ input }}
+Expected Output: {{ expected_output }}
+Actual Output: {{ output }}
+
+Respond in JSON format with:
+- "score": 0.0 to 1.0
+- "reasoning": explanation of your evaluation
+""".strip()
 
     async def score(self, item: EvaluationItem, stage_config: Dict[str, Any]) -> ScorerResult:
         """
@@ -85,7 +99,13 @@ class LLMJudgeScorer(BaseScorer):
         max_tokens = stage_config.get("max_tokens", 1000)
         threshold = stage_config.get("threshold", 0.7)
         system_prompt = stage_config.get("system_prompt", self._default_system_prompt())
-        user_prompt_template = stage_config.get("user_prompt_template")
+        user_prompt_template = stage_config.get("user_prompt_template") or self._default_user_prompt_template()
+
+        if not user_prompt_template or not user_prompt_template.strip():
+            raise ValueError(
+                "'user_prompt_template' is a required key in the 'config' block for the LLM Judge scorer. "
+                "Please define it in the scorer configuration UI or your Eval Pack."
+            )
 
         client = self._get_client(provider, api_key)
 
@@ -97,18 +117,12 @@ class LLMJudgeScorer(BaseScorer):
                 reasoning="No output provided"
             )
 
-        if not user_prompt_template:
-            return ScorerResult(
-                scorer_name=self.name,
-                score=0.0,
-                passed=False,
-                error="user_prompt_template is missing in Eval Pack config for this stage."
-            )
-
         # Render the user prompt using Jinja2.
         try:
             template = jinja2.Template(user_prompt_template)
-            # Pydantic v2: model_dump(). If using v1: item.dict().
+            # FIX: Unpack the item's dictionary into keyword arguments.
+            # This makes `input`, `output`, `expected_output`, etc., available as
+            # top-level variables in the Jinja2 template.
             user_prompt = template.render(**item.model_dump())
         except Exception as e:
             logger.error(f"Jinja2 template error for item '{item.id}': {e}", exc_info=True)
@@ -157,7 +171,7 @@ class LLMJudgeScorer(BaseScorer):
             score = result.get("score", 0.0)
             try:
                 score = float(score)
-            except Exception:
+            except (ValueError, TypeError):
                 score = 0.0
             score = max(0.0, min(1.0, score))
 
@@ -270,6 +284,7 @@ class StructuredLLMJudgeScorer(LLMJudgeScorer):
         # Render the user prompt using Jinja2 (as with standard LLMJudge)
         try:
             template = jinja2.Template(user_prompt_template)
+            # FIX: Unpack here as well for consistency.
             user_prompt = template.render(**item.model_dump())
         except Exception as e:
             logger.error(f"Jinja2 template error for item '{item.id}': {e}", exc_info=True)
@@ -305,7 +320,7 @@ class StructuredLLMJudgeScorer(LLMJudgeScorer):
             score = result.get("score", 0.0)
             try:
                 score = float(score)
-            except Exception:
+            except (ValueError, TypeError):
                 score = 0.0
             score = max(0.0, min(1.0, score))
 
@@ -329,4 +344,3 @@ class StructuredLLMJudgeScorer(LLMJudgeScorer):
             return await super().score(item, stage_config)
 
 # End of file: core/scoring/llm_judge.py
-

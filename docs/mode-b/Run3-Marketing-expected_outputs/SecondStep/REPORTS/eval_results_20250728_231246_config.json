@@ -1,0 +1,69 @@
+{
+  "evaluation_config": {
+    "eval_pack": {
+      "schema_version": "1.0",
+      "name": "Legacy UI Configuration",
+      "version": "1.0",
+      "description": "Automatically generated from legacy UI selections",
+      "author": "Legacy UI",
+      "ingestion": {
+        "type": "csv",
+        "parser": null,
+        "config": {
+          "mode": "evaluate_existing"
+        }
+      },
+      "pipeline": [
+        {
+          "name": "fuzzy_match_stage",
+          "scorer": "fuzzy_match",
+          "config": {
+            "threshold": 0.8
+          },
+          "on_fail": "continue",
+          "run_if": null,
+          "span_kind": null
+        },
+        {
+          "name": "llm_judge_stage",
+          "scorer": "llm_judge",
+          "config": {
+            "provider": "openai",
+            "model": "gpt-4.1",
+            "temperature": 0.3,
+            "max_tokens": 1000,
+            "system_prompt": "You are an expert evaluator. Compare the actual output to the expected output and provide:\n1. A score from 0.0 to 1.0 (where 1.0 is perfect match)\n2. A brief reasoning for your score\n3. Any specific errors or discrepancies noted\n\nRespond in JSON format:\n{\n    \"score\": 0.0-1.0,\n    \"reasoning\": \"explanation\",\n    \"errors\": [\"error1\", \"error2\"] or []\n}",
+            "threshold": 0.7,
+            "user_prompt_template": "Compare the actual output to the expected output for the given input.\n\nInput: {input}\nExpected Output: {expected_output}\nActual Output: {output}\n\nRespond in JSON format with:\n- \"score\": 0.0 to 1.0\n- \"reasoning\": explanation of your evaluation",
+            "api_key": "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"
+          },
+          "on_fail": "continue",
+          "run_if": null,
+          "span_kind": null
+        }
+      ],
+      "reporting": null,
+      "metadata": {
+        "source": "legacy_ui",
+        "auto_generated": true,
+        "selected_scorers": [
+          "fuzzy_match",
+          "llm_judge"
+        ]
+      }
+    },
+    "batch_size": 10,
+    "privacy_settings": {}
+  },
+  "model_configs": {
+    "default_judge_config": {
+      "provider": "openai",
+      "model": "gpt-4.1",
+      "temperature": 0.3,
+      "max_tokens": 1000,
+      "system_prompt": "You are an expert evaluator. Compare the actual output to the expected output and provide:\n1. A score from 0.0 to 1.0 (where 1.0 is perfect match)\n2. A brief reasoning for your score\n3. Any specific errors or discrepancies noted\n\nRespond in JSON format:\n{\n    \"score\": 0.0-1.0,\n    \"reasoning\": \"explanation\",\n    \"errors\": [\"error1\", \"error2\"] or []\n}"
+    }
+  },
+  "selected_scorers": [],
+  "timestamp": "20250728_231246"
+}

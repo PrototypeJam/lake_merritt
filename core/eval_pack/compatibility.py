@@ -1,7 +1,7 @@
 """
 Compatibility layer for translating legacy UI selections into Eval Pack format.
 """
-
+import copy # <-- FIX: Import the copy module for deepcopy
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -64,7 +64,8 @@ def create_legacy_pack(
     # Create pipeline stages from selected scorers
     pipeline_stages = []
     for scorer_name in selected_scorers:
-        config = scorer_configs.get(scorer_name, {}).copy()
+        # FIX: Use a deepcopy to ensure nested configs (like LLM Judge prompts) are preserved.
+        config = copy.deepcopy(scorer_configs.get(scorer_name, {}))
         
         # Handle API keys for LLM-based scorers
         if scorer_name in ["llm_judge", "criteria_selection_judge"]:

@@ -81,17 +81,13 @@ if not results.items:
 def results_to_dataframe(results) -> pd.DataFrame:
     data = []
     for item in results.items:
+        # FIX: Make the string operations "None-safe" to prevent TypeError.
+        # Use 'or ""' as a fallback for None values before slicing or checking length.
         row = {
             "ID": item.id or f"Item {results.items.index(item) + 1}",
-            "Input": item.input[:100] + "..." if len(item.input) > 100 else item.input,
-            "Output": (
-                item.output[:100] + "..." if len(item.output) > 100 else item.output
-            ),
-            "Expected": (
-                item.expected_output[:100] + "..."
-                if len(item.expected_output) > 100
-                else item.expected_output
-            ),
+            "Input": (item.input or "")[:100] + "..." if item.input and len(item.input) > 100 else (item.input or ""),
+            "Output": (item.output or "")[:100] + "..." if item.output and len(item.output) > 100 else (item.output or ""),
+            "Expected": (item.expected_output or "")[:100] + "..." if item.expected_output and len(item.expected_output) > 100 else (item.expected_output or ""),
         }
 
         # Add scores for each scorer

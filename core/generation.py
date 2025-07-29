@@ -1,16 +1,147 @@
+# In file: core/generation.py
+
 """
-Logic for generating outputs from an Actor LLM (Mode B).
+Enhanced generation module for Mode B functionality.
 """
 
 import asyncio
 import logging
-from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
+import jinja2
 
-from core.data_models import EvaluationItem, LLMConfig
+from core.data_models import EvaluationItem
+from core.eval_pack.schema import GenerationConfig, GenerationMode, LLMConfig
 from services.llm_clients import create_llm_client
 
 logger = logging.getLogger(__name__)
+
+
+async def create_generation_prompt(config: GenerationConfig, user_context: str, api_keys: Dict[str, str]) -> str:
+    """
+    Meta-prompting step: Use an LLM to generate the final system prompt.
+    If not configured or disabled, just use the user-provided context directly.
+    """
+    if config.use_meta_prompting and config.prompt_creation_template and config.prompt_generator_llm:
+        logger.info("Using meta-prompting to generate system prompt.")
+        template = jinja2.Template(config.prompt_creation_template)
+        meta_prompt = template.render(context=user_context, mode=config.mode.value)
+        
+        generator_llm_config = config.prompt_generator_llm
+        if not generator_llm_config.api_key:
+            generator_llm_config.api_key = api_keys.get(generator_llm_config.provider)
+
+        client = create_llm_client(generator_llm_config.provider, generator_llm_config.api_key)
+        
+        try:
+            prompt = await client.generate(
+                [{"role": "system", "content": "You are an expert prompt engineer."},
+                 {"role": "user", "content": meta_prompt}],
+                model=generator_llm_config.model,
+                temperature=generator_llm_config.temperature,
+                max_tokens=generator_llm_config.max_tokens,
+            )
+            logger.info("Successfully generated system prompt via meta-prompting.")
+            return prompt.strip()
+        except Exception as e:
+            logger.error(f"Meta-prompting failed: {e}. Falling back to using context directly.")
+            return user_context
+    else:
+        return user_context
+
+
+async def _generate_for_single_item(
+    item: EvaluationItem,
+    system_prompt: str,
+    template: jinja2.Template,
+    client: Any,
+    generator_config: LLMConfig
+) -> str:
+    """Helper function to run generation for one item, allowing exceptions to be caught by gather."""
+    try:
+        user_prompt = template.render(
+            item=item.model_dump(),
+            context=system_prompt
+        )
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+        result = await client.generate(
+            messages,
+            model=generator_config.model,
+            temperature=generator_config.temperature,
+            max_tokens=generator_config.max_tokens,
+        )
+        if not result or not result.strip():
+            raise ValueError("Empty response from LLM")
+        return result.strip()
+    except Exception as e:
+        logger.error(f"Generation task failed for item {item.id}: {e}")
+        # Re-raise the exception so asyncio.gather can catch it
+        raise
+
+
+async def generate_data_for_items(
+    items: List[EvaluationItem],
+    system_prompt: str,
+    config: GenerationConfig,
+    api_keys: Dict[str, str],
+    progress_callback: Optional[Callable[[int, int], None]] = None,
+    batch_size: int = 5
+) -> List[EvaluationItem]:
+    """
+    Generate data for each item using the configured LLM and template.
+    """
+    generator_config = config.data_generator_llm
+    if not generator_config.api_key:
+        generator_config.api_key = api_keys.get(generator_config.provider)
+        
+    if not generator_config.api_key:
+        raise ValueError(f"No API key found for provider: {generator_config.provider}")
+    
+    client = create_llm_client(generator_config.provider, generator_config.api_key)
+    
+    try:
+        template = jinja2.Template(config.data_generation_template)
+        template.render(item=EvaluationItem(input="test", expected_output="test").model_dump(), context="test")
+    except jinja2.TemplateError as e:
+        raise ValueError(f"Invalid Jinja2 template in 'data_generation_template': {str(e)}")
+    
+    completed = 0
+    total = len(items)
+    
+    for i in range(0, total, batch_size):
+        batch = items[i:i + batch_size]
+        tasks = [
+            _generate_for_single_item(item, system_prompt, template, client, generator_config)
+            for item in batch
+        ]
+        
+        # return_exceptions=True ensures that if one task fails, the others complete.
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for item, result in zip(batch, results):
+            if isinstance(result, Exception):
+                error_msg = f"[ERROR: Generation failed - {str(result)}]"
+            else:
+                error_msg = None
+
+            if error_msg:
+                if config.mode == GenerationMode.GENERATE_OUTPUTS:
+                    item.output = error_msg
+                else:
+                    item.expected_output = error_msg
+            else:
+                if config.mode == GenerationMode.GENERATE_OUTPUTS:
+                    item.output = result
+                else:
+                    item.expected_output = result
+            
+            completed += 1
+            if progress_callback:
+                progress_callback(completed, total)
+    
+    return items
 
 
 async def generate_outputs(
@@ -20,161 +151,70 @@ async def generate_outputs(
     batch_size: int = 5,
 ) -> List[EvaluationItem]:
     """
-    Generate outputs for evaluation items using an Actor LLM.
-
-    Args:
-        items: List of evaluation items (with input and expected_output)
-        actor_config: Configuration for the Actor LLM
-        progress_callback: Optional callback for progress updates
-        batch_size: Number of items to process concurrently
-
-    Returns:
-        List of evaluation items with generated outputs
+    Legacy function for backward compatibility. Wraps the new generation logic.
     """
-    start_time = datetime.now()
-    logger.info(f"Starting output generation for {len(items)} items")
+    # FIX: Correctly construct dependencies for the new generation function.
+    provider = actor_config["provider"]
+    api_key = actor_config.get("api_key")
+    api_keys = {provider: api_key} if api_key else {}
 
-    # Create LLM client
-    client = create_llm_client(
-        provider=actor_config["provider"],
-        api_key=actor_config.get("api_key"),
+    generation_config = GenerationConfig(
+        mode=GenerationMode.GENERATE_OUTPUTS,
+        # This uses the new default template for output generation
+        data_generator_llm=LLMConfig(
+            provider=provider,
+            model=actor_config["model"],
+            temperature=actor_config.get("temperature", 0.7),
+            max_tokens=actor_config.get("max_tokens", 1000),
+        )
+    )
+    
+    system_prompt = actor_config.get("system_prompt", "Generate an appropriate output for the given input and expected output reference.")
+    
+    return await generate_data_for_items(
+        items=items,
+        system_prompt=system_prompt,
+        config=generation_config,
+        api_keys=api_keys,
+        progress_callback=progress_callback,
+        batch_size=batch_size
     )
 
-    # Prepare generation parameters
-    gen_params = {
-        "model": actor_config["model"],
-        "temperature": actor_config.get("temperature", 0.7),
-        "max_tokens": actor_config.get("max_tokens", 1000),
-    }
-
-    system_prompt = actor_config.get("system_prompt")
-
-    # Process items in batches
-    total_items = len(items)
-    completed_items = 0
-
-    for i in range(0, len(items), batch_size):
-        batch = items[i : i + batch_size]
-        tasks = []
-
-        for item in batch:
-            # Prepare the prompt
-            if system_prompt:
-                messages = [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": item.input},
-                ]
-            else:
-                messages = [{"role": "user", "content": item.input}]
-
-            # Create generation task
-            task = client.generate(messages, **gen_params)
-            tasks.append((item, task))
-
-        # Wait for batch to complete
-        for item, task in tasks:
-            try:
-                output = await task
-                item.output = output
-                logger.debug(f"Generated output for item {item.id or 'unknown'}")
-            except Exception as e:
-                logger.error(
-                    f"Error generating output for item {item.id or 'unknown'}: {e}"
-                )
-                item.output = f"[ERROR: Failed to generate output - {str(e)}]"
-
-            completed_items += 1
-            if progress_callback:
-                progress_callback(completed_items, total_items)
-
-    end_time = datetime.now()
-    duration = (end_time - start_time).total_seconds()
-
-    logger.info(f"Output generation completed in {duration:.2f} seconds")
-    return items
-
-
+# The original generate_single_output and validate_generation_config can remain as they were.
+# They are not part of the new core flow but might be used elsewhere.
 async def generate_single_output(
     input_text: str,
     actor_config: Dict[str, Any],
 ) -> str:
     """
     Generate a single output for testing or one-off generation.
-
-    Args:
-        input_text: The input prompt
-        actor_config: Configuration for the Actor LLM
-
-    Returns:
-        Generated output text
     """
     client = create_llm_client(
         provider=actor_config["provider"],
         api_key=actor_config.get("api_key"),
     )
-
     gen_params = {
         "model": actor_config["model"],
         "temperature": actor_config.get("temperature", 0.7),
         "max_tokens": actor_config.get("max_tokens", 1000),
     }
-
     system_prompt = actor_config.get("system_prompt")
-
+    messages = [{"role": "user", "content": input_text}]
     if system_prompt:
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": input_text},
-        ]
-    else:
-        messages = [{"role": "user", "content": input_text}]
-
+        messages.insert(0, {"role": "system", "content": system_prompt})
     try:
         output = await client.generate(messages, **gen_params)
         return output
     except Exception as e:
-        logger.error(f"Error generating output: {e}")
+        logger.error(f"Error generating single output: {e}")
         raise
-
 
 def validate_generation_config(config: Dict[str, Any]) -> bool:
     """
-    Validate that a generation configuration has all required fields.
-
-    Args:
-        config: Configuration dictionary
-
-    Returns:
-        True if valid, raises ValueError if not
+    Validate that a legacy generation configuration has all required fields.
     """
     required_fields = ["provider", "model"]
-
     for field in required_fields:
         if field not in config:
             raise ValueError(f"Missing required field in generation config: {field}")
-
-    # Validate provider
-    valid_providers = ["openai", "anthropic", "google"]
-    if config["provider"] not in valid_providers:
-        raise ValueError(
-            f"Invalid provider: {config['provider']}. Must be one of {valid_providers}"
-        )
-
-    # Validate model based on provider
-    provider_models = {
-        "openai": ["gpt-4", "gpt-4-turbo-preview", "gpt-3.5-turbo"],
-        "anthropic": [
-            "claude-3-opus-20240229",
-            "claude-3-sonnet-20240229",
-            "claude-3-haiku-20240307",
-        ],
-        "google": ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro"],
-    }
-
-    valid_models = provider_models.get(config["provider"], [])
-    if config["model"] not in valid_models:
-        logger.warning(
-            f"Model {config['model']} not in known models for {config['provider']}"
-        )
-
     return True
