@@ -64,25 +64,22 @@ def create_legacy_pack(
     # Create pipeline stages from selected scorers
     pipeline_stages = []
     for scorer_name in selected_scorers:
-        # FIX: Use a deepcopy to ensure nested configs (like LLM Judge prompts) are preserved.
-        config = copy.deepcopy(scorer_configs.get(scorer_name, {}))
-        
-        # Handle API keys for LLM-based scorers
-        if scorer_name in ["llm_judge", "criteria_selection_judge"]:
-            if "api_key" not in config:
-                provider = config.get("provider", "openai")
-                api_key = api_keys.get(provider)
-                if api_key:
-                    config["api_key"] = api_key
-        
-        # Create pipeline stage
-        stage = PipelineStage(
-            name=f"{scorer_name}_stage",
-            scorer=scorer_name,
-            config=config,
-            on_fail="continue"  # Legacy behavior: continue on failure
-        )
-        pipeline_stages.append(stage)
+    config = copy.deepcopy(scorer_configs.get(scorer_name, {}))
+    
+    # API keys are injected at runtime by PipelineExecutor.
+    # Never store them in the pack configuration to prevent leakage.
+    # This is a critical security measure.
+    # (If you need to support new LLM-based scorers, ensure they follow this pattern.)
+
+    # Create pipeline stage
+    stage = PipelineStage(
+        name=f"{scorer_name}_stage",
+        scorer=scorer_name,
+        config=config,
+        on_fail="continue"  # Legacy behavior: continue on failure
+    )
+    pipeline_stages.append(stage)
+
     
     # Create the Eval Pack
     eval_pack = EvalPackV1(
