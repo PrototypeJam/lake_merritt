@@ -1,0 +1,38 @@
+schema_version: "1.0"
+name: "First‑Prong Alignment Check"
+version: "1.0"
+description: >
+  Evaluates the first outlined plan item for alignment, practicality, and
+  superiority over obvious alternatives.
+
+ingestion:
+  type: python
+  config:
+    script_path: core/ingestion/agento_analytical_ingester.py
+    entry_function: ingest_agento_analytical_trace
+    mode: "first_prong"    # emits one item combining outline bullet + final content
+
+pipeline:
+  - name: "first_prong_judge"
+    scorer: llm_judge
+    config:
+      provider: openai
+      model: gpt-4o
+      temperature: 0.1
+      threshold: 0.6        # optional gating
+      system_prompt: |
+        You are a critical strategist. Analyse whether the selected plan item
+        is the *best available* way to help reach the goal given the rest of
+        the outline. Enumerate trade‑offs and plausible better alternatives.
+        Output JSON: {"rating": 1‑5, "reasoning": string}.
+      user_prompt_template: |
+        ## User goal
+        {{ metadata.user_goal }}
+
+        ## Full outline
+        {{ metadata.full_plan_outline }}
+
+        ## Item under review (first prong)
+        {{ output }}
+
+        Use this 1‑5 scale (same wording as Pack B, but for the single prong).

@@ -1,0 +1,53 @@
+{
+  "evaluation_config": {
+    "eval_pack": {
+      "schema_version": "1.0",
+      "name": "Plan Quality 5\u2011Point Judge",
+      "version": "1.0",
+      "description": "Compares unrevised plan to final revised plan against the original user goal using a 1\u20115 ordinal rubric stored in the result JSON.\n",
+      "author": null,
+      "generation": null,
+      "ingestion": {
+        "type": "python",
+        "parser": null,
+        "config": {
+          "script_path": "core/ingestion/agento_analytical_ingester.py",
+          "entry_function": "ingest_agento_analytical_trace",
+          "mode": "plan_delta"
+        }
+      },
+      "pipeline": [
+        {
+          "name": "plan_quality_judge",
+          "scorer": "llm_judge",
+          "config": {
+            "provider": "openai",
+            "model": "gpt-4o",
+            "temperature": 0.0,
+            "system_prompt": "You are an external reviewer. Only consider the user's original goal,\nthe first full plan, and the final revised plan. Use the rubric and\nthink step\u2011by\u2011step before deciding.\nOutput JSON: {\"score\": 1\u20115, \"reasoning\": string}.\n",
+            "user_prompt_template": "## Original goal\n{{ input }}\n\n## First full plan\n{{ expected_output }}\n\n## Final revised plan\n{{ output }}\n\nRUBRIC\n5 \u2013 Significantly more likely to achieve the goal  \n4 \u2013 Somewhat more likely  \n3 \u2013 About as likely  \n2 \u2013 Somewhat less likely  \n1 \u2013 Significantly less likely"
+          },
+          "on_fail": "continue",
+          "run_if": null,
+          "span_kind": null
+        }
+      ],
+      "reporting": null,
+      "metadata": {}
+    },
+    "batch_size": 10,
+    "privacy_settings": {}
+  },
+  "model_configs": {
+    "default_judge_config": {
+      "provider": "openai",
+      "model": "gpt-4.1",
+      "temperature": 0.3,
+      "max_tokens": 1000,
+      "system_prompt": "You are an expert evaluator. Compare the actual output to the expected output and provide:\n1. A score from 0.0 to 1.0 (where 1.0 is perfect match)\n2. A brief reasoning for your score\n3. Any specific errors or discrepancies noted\n\nRespond in JSON format:\n{\n    \"score\": 0.0-1.0,\n    \"reasoning\": \"explanation\",\n    \"errors\": [\"error1\", \"error2\"] or []\n}",
+      "user_prompt_template": "Compare the actual output to the expected output for the given input.\n\nInput: {{ input }}\nExpected Output: {{ expected_output }}\nActual Output: {{ output }}\n\nRespond in JSON format with:\n- \"score\": 0.0 to 1.0\n- \"reasoning\": explanation of your evaluation"
+    }
+  },
+  "selected_scorers": [],
+  "timestamp": "20250731_062613"
+}

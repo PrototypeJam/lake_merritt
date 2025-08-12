@@ -1,0 +1,36 @@
+schema_version: "1.0"
+name: "Timeout Revision Diagnosis"
+version: "1.0"
+description: >
+  Flags revision requests that never reached an accepted_revision. Summarises partial
+  progress or the root cause of failure (mis‑understanding, missing data, etc.).
+
+ingestion:
+  type: python
+  config:
+    script_path: core/ingestion/agento_analytical_ingester.py
+    entry_function: ingest_agento_analytical_trace
+    mode: "timeout_cycles"   # emits only (revision_request, last_draft_or_none)
+
+pipeline:
+  - name: "timeout_analysis"
+    scorer: llm_judge
+    config:
+      provider: openai
+      model: gpt-4o
+      temperature: 0.0
+      system_prompt: |
+        You are an incident‑response analyst. A revision request timed out (no
+        accepted revision). Evaluate how far the draft got and why it failed.
+        Return JSON with:
+        {
+          "progress_summary": string,      # <= 50 words
+          "root_cause": string,            # classification: "instruction_gap" | "data_gap" | "model_confusion" | "other"
+          "salvage_value": 0‑1             # 1 = almost done, 0 = no usable output
+        }
+      user_prompt_template: |
+        ### Revision request (ground truth desired changes)
+        {{ input }}
+
+        ### Last draft the model produced (may be missing)
+        {{ output or "NO DRAFT RETURNED" }}

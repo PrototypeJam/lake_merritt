@@ -1,0 +1,77 @@
+# Evaluation Summary Report
+
+Generated on: 2025-07-31 06:16:01
+
+## Overview
+
+- **Total Items Evaluated**: 7
+- **Evaluation Mode**: Unknown
+- **Duration**: 0.00 seconds
+- **Scorers Used**: LLM Judge
+
+## Summary Statistics
+
+### Llm Judge
+
+- **Accuracy**: 0.0%
+- **Items Passed**: 0/1
+- **Items Failed**: 1/1
+- **Average Score**: 0.000
+- **Score Range**: 0.000 - 0.000
+
+## Failure Analysis
+
+### Llm Judge Failures
+
+Total failures: 1
+
+- **Item context_896c99a3d5d11e7b** (Score: 0.000)
+  - Reason: The 'Requirements Gathering and Analysis' step is a crucial foundational phase for the Lake Merritt ...
+
+## Configuration
+
+```json
+{
+  "eval_pack": {
+    "schema_version": "1.0",
+    "name": "Single Plan Prong Strategic Soundness",
+    "version": "1.0",
+    "description": "Performs a deep strategic analysis of a single step from the plan outline, evaluating its coherence with other steps and its likelihood of contributing to the user's goal.\n",
+    "author": null,
+    "generation": null,
+    "ingestion": {
+      "type": "python",
+      "parser": null,
+      "config": {
+        "script_path": "core/ingestion/agento_analytical_ingester.py",
+        "entry_function": "ingest_agento_analytical_trace",
+        "mode": "context_aware_steps"
+      }
+    },
+    "pipeline": [
+      {
+        "name": "analyze_first_plan_step_strategy",
+        "scorer": "llm_judge",
+        "config": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "threshold": 0.75,
+          "system_prompt": "You are a master strategist and a skeptical critic. Your job is not to write content, but to critically evaluate the strategic soundness of a single proposed step within a larger project plan. You must think deeply about its alignment, practicality, and whether superior alternatives exist.\n\nYou must return ONLY valid JSON with three fields: `rating` (an integer from 1-5), `rating_meaning` (the corresponding string description from the rubric), and your detailed `reasoning`.\n",
+          "user_prompt_template": "### User's Overall Goal:\n{{ metadata.user_goal }}\n\n### Full Proposed Plan Outline:\n{{ metadata.full_plan_outline }}\n\n### Specific Step Under Review:\n**Step Name:** '{{ metadata.step_name }}'\n**Proposed Content/Focus:** {{ output }}\n\n### Your Critical Thinking Task:\nAnalyze the strategic soundness of the \"Specific Step Under Review\". Consider the following questions in your reasoning:\n1.  **Alignment:** How well does this step directly contribute to achieving the User's Overall Goal?\n2.  **Coherence:** Does this step logically fit with the *other* steps in the Full Proposed Plan Outline? Is it well-sequenced?\n3.  **Practicality:** Is this a realistic and efficient step, or is it overly complex or vague?\n4.  **Superior Alternatives:** Are there obvious, much better steps that could have been proposed instead to more effectively achieve the goal?\n\nAfter your critical analysis, provide a `rating` using the 5-point scale below, the corresponding `rating_meaning` string, and your detailed `reasoning` that addresses the questions above.\n\n### 5-Point Rating Scale:\n- **5 (Excellent Strategic Choice):** This step is a critical, well-placed, and practical component of a coherent plan. It is one of the best possible ways to advance the user's goal.\n- **4 (Good Strategic Choice):** This step is logical and contributes positively to the goal. It aligns well with the other steps, though minor improvements might be possible.\n- **3 (Acceptable Strategic Choice):** This step is plausible and not harmful, but it may not be the most efficient or impactful approach. It's a \"safe\" but uninspired choice.\n- **2 (Poor Strategic Choice):** This step is questionable. It may be redundant, poorly sequenced, impractical, or only weakly aligned with the user's goal. There are likely much better alternatives.\n- **1 (Flawed Strategic Choice):** This step is strategically unsound. It is misaligned with the goal, creates conflicts with other steps, or is based on a fundamental misunderstanding of the project's needs."
+        },
+        "on_fail": "continue",
+        "run_if": "'Step 1' in metadata.get('step_name', '')",
+        "span_kind": null
+      }
+    ],
+    "reporting": null,
+    "metadata": {}
+  },
+  "batch_size": 10,
+  "privacy_settings": {}
+}
+```
+
+## Recommendations
+
+- Overall accuracy is below 50%. Consider reviewing the model's training data or prompts.

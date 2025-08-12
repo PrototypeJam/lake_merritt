@@ -1,0 +1,51 @@
+schema_version: "1.0"
+name: "Timeout Failure Root Cause Analysis"
+version: "1.0"
+description: >
+  Finds revision cycles that timed out and evaluates the agent's last attempt to determine the root cause of the failure.
+
+ingestion:
+  type: "python"
+  config:
+    # NOTE: Using the generalized ingester which has the timeout logic
+    script_path: "core/ingestion/agento_generalized_ingester.py"
+    entry_function: "ingest_agento_trace"
+
+pipeline:
+  - name: "analyze_timeout_failure"
+    # This pipeline stage will ONLY run on items ingested from a "timed_out_revision" span
+    run_if: "metadata.get('step_type') == 'timed_out_revision'"
+    scorer: "llm_judge"
+    config:
+      provider: "anthropic"
+      model: "claude-3-5-sonnet-20240620"
+      threshold: 0.5 # A low threshold, as we are categorizing, not scoring quality
+      system_prompt: |
+        You are a senior AI diagnostician. An AI agent failed to complete a revision within the maximum number of attempts. Your task is to analyze the final state to determine the root cause of the failure. Review the revision request, the agent's last attempted draft, and the final critique it received.
+
+        Respond ONLY in valid JSON with a "failure_category" string and your detailed "analysis".
+
+      user_prompt_template: |
+        ### Step Name:
+        {{ metadata.step_name }}
+
+        ### Original Revision Request (What it was asked to do):
+        {{ input }}
+
+        ### Agent's Last Attempted Draft (How far it got):
+        {{ output }}
+
+        ### Final Critique (The last feedback it received):
+        {{ expected_output }}
+
+        ### Diagnostic Task & Categories:
+        Based on the provided data, categorize the primary reason for the failure. Select one of the following for `failure_category`:
+
+        - "SUBSTANTIVE_PROGRESS_MADE": The agent was making good progress and likely would have succeeded with more attempts.
+        - "INSTRUCTION_MISUNDERSTANDING": The agent consistently failed to grasp the core of the revision request.
+        - "REPETITIVE_LOOP": The agent was stuck in a repetitive loop, making the same or similar mistakes.
+        - "HALLUCINATION_OR_CONFABULATION": The agent introduced incorrect or irrelevant information, derailing the revision.
+        - "REFUSAL_OR_INCOMPLETE": The agent refused to perform the task or produced incomplete, placeholder content.
+        - "CRITIQUE_FAILURE": The revision request itself was ambiguous, contradictory, or unhelpful, making success impossible.
+
+        Provide your detailed `analysis` explaining your choice.

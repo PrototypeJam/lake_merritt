@@ -1,0 +1,53 @@
+schema_version: "1.0"
+name: "Single Plan Prong Strategic Soundness"
+version: "1.0"
+description: >
+  Performs a deep strategic analysis of a single step from the plan outline, evaluating its coherence with other steps and its likelihood of contributing to the user's goal.
+
+ingestion:
+  type: "python"
+  config:
+    script_path: "core/ingestion/agento_analytical_ingester.py"
+    entry_function: "ingest_agento_analytical_trace"
+    mode: "context_aware_steps" # This mode provides the necessary context
+
+pipeline:
+  - name: "analyze_first_plan_step_strategy"
+    # This example runs only on the first step of the plan for focused analysis
+    run_if: "'Step 1' in metadata.get('step_name', '')"
+    scorer: "llm_judge"
+    config:
+      provider: "openai"
+      model: "gpt-4o"
+      threshold: 0.75 # Corresponds to a rating of 3 or higher
+      system_prompt: |
+        You are a master strategist and a skeptical critic. Your job is not to write content, but to critically evaluate the strategic soundness of a single proposed step within a larger project plan. You must think deeply about its alignment, practicality, and whether superior alternatives exist.
+
+        You must return ONLY valid JSON with three fields: `rating` (an integer from 1-5), `rating_meaning` (the corresponding string description from the rubric), and your detailed `reasoning`.
+
+      user_prompt_template: |
+        ### User's Overall Goal:
+        {{ metadata.user_goal }}
+
+        ### Full Proposed Plan Outline:
+        {{ metadata.full_plan_outline }}
+
+        ### Specific Step Under Review:
+        **Step Name:** '{{ metadata.step_name }}'
+        **Proposed Content/Focus:** {{ output }}
+
+        ### Your Critical Thinking Task:
+        Analyze the strategic soundness of the "Specific Step Under Review". Consider the following questions in your reasoning:
+        1.  **Alignment:** How well does this step directly contribute to achieving the User's Overall Goal?
+        2.  **Coherence:** Does this step logically fit with the *other* steps in the Full Proposed Plan Outline? Is it well-sequenced?
+        3.  **Practicality:** Is this a realistic and efficient step, or is it overly complex or vague?
+        4.  **Superior Alternatives:** Are there obvious, much better steps that could have been proposed instead to more effectively achieve the goal?
+
+        After your critical analysis, provide a `rating` using the 5-point scale below, the corresponding `rating_meaning` string, and your detailed `reasoning` that addresses the questions above.
+
+        ### 5-Point Rating Scale:
+        - **5 (Excellent Strategic Choice):** This step is a critical, well-placed, and practical component of a coherent plan. It is one of the best possible ways to advance the user's goal.
+        - **4 (Good Strategic Choice):** This step is logical and contributes positively to the goal. It aligns well with the other steps, though minor improvements might be possible.
+        - **3 (Acceptable Strategic Choice):** This step is plausible and not harmful, but it may not be the most efficient or impactful approach. It's a "safe" but uninspired choice.
+        - **2 (Poor Strategic Choice):** This step is questionable. It may be redundant, poorly sequenced, impractical, or only weakly aligned with the user's goal. There are likely much better alternatives.
+        - **1 (Flawed Strategic Choice):** This step is strategically unsound. It is misaligned with the goal, creates conflicts with other steps, or is based on a fundamental misunderstanding of the project's needs.
