@@ -120,6 +120,11 @@ class ReportingConfig(BaseModel):
     template: Optional[str] = None
     format: str = "markdown"  # "markdown", "html", "pdf"
 
+# NEW: Aggregator configuration
+class AggregatorConfig(BaseModel):
+    name: str
+    config: Dict[str, Any] = Field(default_factory=dict)
+
 class EvalPackV1(BaseModel):
     schema_version: SchemaVersion = SchemaVersion.V1_0
     name: str
@@ -132,5 +137,6 @@ class EvalPackV1(BaseModel):
     
     ingestion: IngestionConfig
     pipeline: List[PipelineStage]
+    aggregators: Optional[List[AggregatorConfig]] = None  # NEW: Add aggregators field
     reporting: Optional[ReportingConfig] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)

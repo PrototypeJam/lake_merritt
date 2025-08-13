@@ -7,6 +7,7 @@ class ComponentRegistry:
     """Central registry for discoverable components"""
     _scorers: Dict[str, Type[BaseScorer]] = {}
     _ingesters: Dict[str, Type[BaseIngester]] = {}
+    _aggregators: Dict[str, Type] = {}  # Add aggregator registry
     
     @classmethod
     def register_scorer(cls, name: str, scorer_class: Type[BaseScorer]):
@@ -29,9 +30,21 @@ class ComponentRegistry:
         return cls._ingesters[name]
 
     @classmethod
+    def register_aggregator(cls, name: str, aggregator_class: Type):
+        """Register an aggregator class"""
+        cls._aggregators[name] = aggregator_class
+    
+    @classmethod
+    def get_aggregator(cls, name: str) -> Type:
+        """Get an aggregator class by name"""
+        if name not in cls._aggregators:
+            raise ValueError(f"Unknown aggregator: {name}")
+        return cls._aggregators[name]
+
+    @classmethod
     def discover_builtins(cls):
         """Auto-register all built-in components, tolerating those not yet implemented."""
-        # Register scorers
+        # Register existing scorers
         try:
             from core.scoring import (
                 ExactMatchScorer, FuzzyMatchScorer,
@@ -50,7 +63,26 @@ class ComponentRegistry:
         except ImportError:
             print("INFO: ToolUsageScorer not implemented yet, skipping.")
 
-        # Register ingesters
+        # Register NEW FDL/BBQ scorers
+        try:
+            from core.scoring.fdl_alignment_scorer import FDLAlignmentScorer
+            cls.register_scorer("fdl_alignment", FDLAlignmentScorer)
+        except ImportError:
+            print("INFO: FDLAlignmentScorer not found, skipping registration.")
+
+        try:
+            from core.scoring.fdl_disclosure_scorer import FDLDisclosureScorer
+            cls.register_scorer("fdl_disclosure", FDLDisclosureScorer)
+        except ImportError:
+            print("INFO: FDLDisclosureScorer not found, skipping registration.")
+
+        try:
+            from core.scoring.choice_index_scorer import ChoiceIndexScorer
+            cls.register_scorer("choice_index", ChoiceIndexScorer)
+        except ImportError:
+            print("INFO: ChoiceIndexScorer not found, skipping registration.")
+
+        # Register existing ingesters
         try:
             from core.ingestion.csv_ingester import CSVIngester
             cls.register_ingester("csv", CSVIngester)
@@ -94,3 +126,16 @@ class ComponentRegistry:
             cls.register_ingester("python", PythonIngester)
         except ImportError:
             print("INFO: PythonIngester not implemented yet, skipping.")
+
+        # Register NEW aggregators
+        try:
+            from core.aggregators.fdl_metrics_aggregator import FDLMetricsAggregator
+            cls.register_aggregator("FDLMetricsAggregator", FDLMetricsAggregator)
+        except ImportError:
+            print("INFO: FDLMetricsAggregator not found, skipping registration.")
+
+        try:
+            from core.aggregators.bbq_bias_aggregator import BBQBiasScoreAggregator
+            cls.register_aggregator("BBQBiasScoreAggregator", BBQBiasScoreAggregator)
+        except ImportError:
+            print("INFO: BBQBiasScoreAggregator not found, skipping registration.")

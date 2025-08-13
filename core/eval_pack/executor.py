@@ -1,3 +1,4 @@
+# core/eval_pack/executor.py
 """
 Pipeline executor for running Eval Pack pipelines.
 
@@ -126,21 +127,49 @@ class PipelineExecutor:
                 
                 for stage in self.eval_pack.pipeline:
                     
-                    ### FIX #2: IMPLEMENT `run_if` CONDITIONAL EXECUTION ###
+                    # Handle conditional execution with safe evaluator
+                    should_run = True
                     if stage.run_if:
+                        # Build context for safe evaluation
+                        context = {
+                            "item": item,
+                            "metadata": item.metadata,
+                            "input": item.input,
+                            "output": item.output,
+                            "expected_output": item.expected_output
+                        }
+                        
                         try:
-                            ### DIA'S SUGGESTION: DEFENSIVE PROGRAMMING for `eval()` ###
-                            # NOTE: Using eval() on untrusted input is a security risk.
-                            # This is acceptable for now as the Eval Pack YAML is controlled
-                            # by the user. For a production system handling untrusted packs,
-                            # replace this with a safer expression evaluator like `asteval`.
-                            context = {"metadata": item.metadata, "input": item.input, "output": item.output}
-                            if not eval(stage.run_if, {"__builtins__": {}}, context):
-                                logger.debug(f"Skipping stage '{stage.name}' for item '{item.id}' due to run_if condition.")
-                                continue # Skip to the next stage
+                            # Try to use safe evaluator if available
+                            from core.utils.safe_expr import evaluate as safe_evaluate, SafeExpressionError
+                            should_run = safe_evaluate(stage.run_if, context)
+                        except ImportError:
+                            # Fallback to eval with restricted builtins (less safe but backward compatible)
+                            logger.warning("Safe expression evaluator not available, using restricted eval")
+                            try:
+                                should_run = eval(stage.run_if, {"__builtins__": {}}, context)
+                            except Exception as e:
+                                logger.warning(
+                                    f"Could not evaluate run_if condition '{stage.run_if}' for stage '{stage.name}'. "
+                                    f"Skipping stage. Error: {e}"
+                                )
+                                should_run = False
+                        except SafeExpressionError as e:
+                            logger.warning(
+                                f"Could not evaluate run_if condition '{stage.run_if}' for stage '{stage.name}'. "
+                                f"Skipping stage. Error: {e}"
+                            )
+                            should_run = False
                         except Exception as e:
-                            logger.warning(f"Could not evaluate run_if condition '{stage.run_if}' for stage '{stage.name}'. Skipping stage. Error: {e}")
-                            continue # Gracefully skip stage on evaluation error
+                            logger.warning(
+                                f"Unexpected error evaluating run_if condition for stage '{stage.name}'. "
+                                f"Skipping stage. Error: {e}"
+                            )
+                            should_run = False
+                    
+                    if not should_run:
+                        logger.debug(f"Skipping stage '{stage.name}' for item '{item.id}' due to run_if condition.")
+                        continue
 
                     try:
                         ### FIX #1 (CORE ARCHITECTURE): INSTANTIATE SCORER ON-THE-FLY ###
@@ -213,4 +242,19 @@ class PipelineExecutor:
         )
         
         results.calculate_summary_stats()
+        
+        # Execute aggregators if configured
+        if self.eval_pack.aggregators:
+            results.metadata.setdefault("aggregates", {})
+            for agg_config in self.eval_pack.aggregators:
+                try:
+                    aggregator_class = ComponentRegistry.get_aggregator(agg_config.name)
+                    aggregator_instance = aggregator_class(config=agg_config.config)
+                    metrics = aggregator_instance.aggregate(results)
+                    results.metadata["aggregates"][agg_config.name] = metrics
+                    logger.info(f"Successfully ran aggregator '{agg_config.name}'.")
+                except Exception as e:
+                    logger.error(f"Failed to run aggregator '{agg_config.name}': {e}", exc_info=True)
+                    results.metadata["aggregates"][agg_config.name] = {"error": str(e)}
+        
         return results
