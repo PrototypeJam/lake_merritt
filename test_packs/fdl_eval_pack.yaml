@@ -30,7 +30,7 @@ pipeline:
   - name: "FDL Disclosure (if required)"
     scorer: "fdl_disclosure"
     # Use safe subscript access instead of disallowed method call
-    run_if: "item.metadata['requires_disclosure'] == True"
+    run_if: "metadata['requires_disclosure']"
     config:
       success_threshold: 2
 

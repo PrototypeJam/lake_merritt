@@ -59,8 +59,8 @@ def _evaluate_node(node: ast.AST, context: Dict[str, Any]) -> Any:
 
     if isinstance(node, ast.Subscript):
         base_obj = _evaluate_node(node.value, context)
-        # Python 3.9+: slice is the key expression; older: ast.Index
-        key = _evaluate_node(getattr(node.slice, "value", node.slice), context)
+        # FIX: evaluate the AST node itself; do NOT pre-unpack .value (which is a str in Constant)
+        key = _evaluate_node(node.slice, context)
         if isinstance(base_obj, (dict, list, tuple)):
             try:
                 return base_obj.get(key) if isinstance(base_obj, dict) else base_obj[key]
@@ -96,7 +96,8 @@ def _evaluate_node(node: ast.AST, context: Dict[str, Any]) -> Any:
     if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
         return not _evaluate_node(node.operand, context)
 
-    raise SafeExpressionError(f"Unsupported expression node: {ast.dump(node)}")
+    desc = ast.dump(node) if isinstance(node, ast.AST) else repr(node)
+    raise SafeExpressionError(f"Unsupported expression node: {desc}")
 
 def evaluate(expression: str, context: Dict[str, Any]) -> bool:
     """
@@ -109,5 +110,5 @@ def evaluate(expression: str, context: Dict[str, Any]) -> bool:
         _check_node(tree)
         result = _evaluate_node(tree, context)
         return bool(result)
-    except (SyntaxError, SafeExpressionError, AttributeError, KeyError) as e:
+    except (SyntaxError, SafeExpressionError, AttributeError, KeyError, TypeError) as e:
         raise SafeExpressionError(f"Failed to safely evaluate expression '{expression}': {e}") from e
