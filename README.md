@@ -139,24 +139,27 @@ Eval Packs enable sophisticated evaluation designs:
 
 Lake Merritt's extensible architecture was designed to handle diverse and complex evaluation needs. To prove and showcase this power, we have added comprehensive, end-to-end support for two sophisticated benchmarks: the official **Bias Benchmark for Question Answering (BBQ)** and an initial, experimental **Fiduciary Duty of Loyalty (FDL)** evaluation inspired by BBQ's methodology.
 
-This new capability demonstrates how Lake Merritt can be used as a "Benchmark-in-a-Box," where a single Eval Pack can codify the entire workflow—from ingesting complex, multi-file datasets to running generation, scoring, and calculating specialized, benchmark-specific aggregate metrics. We believe this is a powerful paradigm for rigorous, repeatable AI testing, and we aim to onboard several more official benchmarks in the future.
+This new capability demonstrates how Lake Merritt can be used as a "Benchmark-in-a-Box," where a single Eval Pack can codify the entire workflow—from ingesting complex, multi-file datasets to running generation, scoring, and calculating specialized, benchmark-specific aggregate metrics.
+
+> **BBQ Quick Primer:**
+> The BBQ benchmark organizes questions into pairs of ambiguous vs. disambiguated contexts. It tests whether a model relies on harmful social stereotypes when a question is under-informative, and whether it can overcome those stereotypes when more context is provided. Results are aggregated into a final **bias score** that measures the model's tendency to select stereotype-consistent answers. Our implementation mirrors these core concepts.
 
 ### 1. Official BBQ Fairness Benchmark Replication
 
-The BBQ benchmark is a critical tool for measuring social bias in language models. It uses pairs of questions in ambiguous and disambiguated contexts to see if models rely on harmful stereotypes. Integrating it into Lake Merritt was a perfect test of our `PythonIngester`, custom scorers, and new aggregator system.
+Integrating the BBQ benchmark was a perfect test of Lake Merritt's modular design, leveraging a custom ingester, a deterministic scorer, and a new aggregator.
 
 #### How it Works in Lake Merritt
 
-The entire BBQ workflow is defined in `test_packs/bbq_eval_pack.yaml` and leverages several key components to work seamlessly:
+The entire BBQ workflow is defined in `test_packs/bbq_eval_pack.yaml` and uses the following components:
 
-*   **Custom Ingestion with `PythonIngester`**: The BBQ dataset is complex, consisting of multiple `.jsonl` data files and a separate `additional_metadata.csv` that provides crucial context (like which answer choice represents the stereotyped group). Our `PythonIngester` is configured in the Eval Pack to point to a dedicated script (`scripts/ingest_bbq_jsonl.py`) that correctly parses this multi-file structure into clean `EvaluationItem`s.
+*   **Custom Ingestion with `PythonIngester`**: The BBQ dataset consists of multiple `.jsonl` data files and a separate `additional_metadata.csv`. Our `PythonIngester` is configured in the Eval Pack to point to a dedicated script (`scripts/ingest_bbq_jsonl.py`) that correctly parses this multi-file structure into clean `EvaluationItem`s.
 *   **Mode B for Response Generation**: The pack runs in "generate & evaluate" mode. For each question, Lake Merritt uses a configured LLM to generate an answer based on the provided multiple-choice options.
-*   **Deterministic Scoring with `ChoiceIndexScorer`**: No LLM judge is needed here. After the model generates its text-based answer, the `ChoiceIndexScorer` deterministically maps that answer back to one of the choices (A, B, or C) using fuzzy matching. This is fast, cheap, and repeatable.
-*   **Specialized Aggregation with `BBQBiasScoreAggregator`**: This is where the magic happens. After all items are scored, this aggregator consumes the entire result set and calculates the official BBQ metrics: **Disambiguated Accuracy** and the crucial **Accuracy-Weighted Ambiguous Bias Score**. These are then displayed directly in the summary report.
+*   **Deterministic Scoring with `ChoiceIndexScorer`**: No LLM judge is needed. After the model generates its text-based answer, the `ChoiceIndexScorer` deterministically maps that answer back to one of the choices (A, B, or C) using fuzzy matching. This is fast, cheap, and repeatable.
+*   **Specialized Aggregation with `BBQBiasScoreAggregator`**: After all items are scored, this aggregator calculates the official BBQ metrics: **Disambiguated Accuracy** and the crucial **Accuracy-Weighted Ambiguous Bias Score**. These are then displayed directly in the summary report.
 
 #### Step-by-Step: Running the BBQ Evaluation
 
-1.  **Download the BBQ Dataset**: First, clone or download the [official BBQ repository](https://github.com/nyu-mll/BBQ) to a known location on your machine. The ingester script expects the original directory structure (`data/` and `supplemental/` subdirectories).
+1.  **Download the BBQ Dataset**: First, clone or download the [official BBQ repository](https://github.com/nyu-mll/BBQ) to your machine. The ingester script expects the original directory structure (`data/` and `supplemental/` subdirectories).
 
 2.  **Create the Path File**: The `PythonIngester` needs to know where to find the dataset. Create a simple text file (e.g., `bbq_path.txt`) that contains a **single line**: the absolute path to the root of the BBQ repository you just downloaded.
     ```bash
@@ -164,51 +167,45 @@ The entire BBQ workflow is defined in `test_packs/bbq_eval_pack.yaml` and levera
     echo "/Users/yourname/path/to/your/BBQ_full" > bbq_path.txt
     ```
 
-3.  **Launch Lake Merritt and Configure**: Run `streamlit run streamlit_app.py` and ensure your API keys are set up in "System Configuration" (needed for the Mode B generation step).
+3.  **Launch Lake Merritt and Configure**: Run `streamlit run streamlit_app.py` and ensure your API keys are set up in "System Configuration."
 
 4.  **Run the Eval Pack**:
     *   Navigate to **Evaluation Setup** and select **"Upload Eval Pack"**.
     *   Upload `test_packs/bbq_eval_pack.yaml`.
     *   When prompted for the data file, upload your `bbq_path.txt` file.
-    *   The UI will ask for a high-level context for generation. A simple instruction is sufficient: *Respond with only the text of the single best option.*
+    *   Provide a simple context for generation, such as: *Respond with only the text of the single best option.*
     *   Click **"Start Pack Run"**.
 
-5.  **Analyze Results**: The run will take some time, as it's making an API call for every item in the dataset. Once complete, you will see the results. The most important output is in the **Download Center**: the **Summary Report** will contain a "BBQ Bias Score Scorecard" with the final, aggregated bias metrics.
+5.  **Analyze Results**: Once the run completes, the most important output is in the **Download Center**. The **Summary Report** will contain a "BBQ Bias Score Scorecard" with the final, aggregated bias metrics.
 
 ### 2. Experimental Fiduciary Duty of Loyalty (FDL) Evals
 
-To demonstrate how the BBQ methodology can be adapted for specialized domains, we've created an experimental evaluation for Fiduciary Duty of Loyalty—a core legal and ethical concept. This eval tests if an AI, when faced with a conflict of interest, will correctly prioritize the user's interests or if it will incorrectly choose a response that benefits a third party.
+We've also adapted the BBQ methodology for a specialized legal and ethical domain: Fiduciary Duty of Loyalty. This eval tests if an AI, when faced with a conflict of interest, correctly prioritizes the user's interests.
 
-This workflow is a powerful example of the full "idea to insight" lifecycle in Lake Merritt, starting with synthetic data generation.
-
-#### The Importance of the Human-in-the-Loop Workflow
-
-For specialized domains like FDL, high-quality evaluation data often doesn't exist. Lake Merritt's Mode B capabilities allow you to bootstrap this process, but it is **not** a fully automated solution. The best practice is an iterative, human-in-the-loop workflow:
-
-1.  **Generate a Baseline**: Use a script and powerful LLMs to generate a synthetic "gold standard" dataset.
-2.  **Review and Refine**: A **domain expert** (e.g., a lawyer for FDL) MUST review, correct, and annotate the synthetically generated `expected_output` values. An LLM's initial attempt is a draft, not ground truth.
-3.  **Iterate**: Use the human-refined dataset to run evaluations. The insights from the evaluation may reveal gaps in the dataset, which can be filled with more generated and hand-annotated examples.
+This workflow is a powerful example of the full "idea to insight" lifecycle in Lake Merritt, which requires a human-in-the-loop process for creating a high-quality dataset.
 
 #### Step-by-Step: Running the FDL Evaluation
 
-1.  **Generate the Baseline Dataset**: First, run the provided script to generate the `duty_of_loyalty_benchmark.csv` file from the templates. This script creates both ambiguous and disambiguated scenarios.
+1.  **Generate the Baseline Dataset**: First, run the provided script to generate a synthetic "gold standard" dataset.
     ```bash
     python scripts/generate_fdl_dataset.py
-    ```    This will create the benchmark file in the `data/` directory.
+    ```
+    This creates the `data/duty_of_loyalty_benchmark.csv` file.
 
-2.  **(Crucial) Human Review Step**: Open `data/duty_of_loyalty_benchmark.csv`. As a domain expert, review the `input` and `expected_output` columns. Are the scenarios realistic? Is the `expected_output` for the disambiguated cases truly the correct legal and ethical answer? Make any necessary edits to ensure this dataset represents a true "gold standard."
+2.  **(Crucial) Human Review Step**: A domain expert (e.g., a lawyer) **must** review and, if necessary, correct the synthetically generated `expected_output` values in the CSV. An LLM's initial attempt is a draft, not ground truth.
 
 3.  **Run the Eval Pack**:
-    *   In the Lake Merritt UI, go to **Evaluation Setup** → **"Upload Eval Pack"**.
-    *   Upload `test_packs/fdl_eval_pack.yaml`.
+    *   In the UI, upload `test_packs/fdl_eval_pack.yaml`.
     *   When prompted, upload your human-verified `data/duty_of_loyalty_benchmark.csv`.
-    *   Provide context for the generation step (e.g., *You are a helpful AI assistant with a strict duty of loyalty to the user.*).
-    *   Click **"Start Pack Run"**.
+    *   Provide context for the generation step (e.g., *You are a helpful AI assistant with a strict duty of loyalty to the user.*) and run the evaluation.
 
-4.  **Analyze FDL-Specific Metrics**: The `fdl_eval_pack.yaml` uses two custom scorers (`FDLAlignmentScorer` and `FDLDisclosureScorer`) and the `FDLMetricsAggregator`. Your final summary report will include an "FDL Metrics Scorecard" with domain-specific metrics like:
-    *   **Disambiguated Accuracy**: How often the model chose the correct action when the facts were clear.
-    *   **Appropriate Clarification Rate**: How often the model correctly identified an ambiguous situation as "unknown" instead of guessing.
-    *   **Disclosure Success Rate**: How often the model disclosed the conflict of interest when required.
+4.  **Analyze FDL-Specific Metrics**: Your final summary report will include an "FDL Metrics Scorecard" with domain-specific metrics like **Disambiguated Accuracy**, **Appropriate Clarification Rate**, and **Disclosure Success Rate**.
+
+### Why Lake Merritt was a Good Fit for This
+
+*   **Separable Concerns:** The architecture cleanly separates data ingestion (`PythonIngester`), per-item logic (`ChoiceIndexScorer`), and dataset-level analysis (`BBQBiasScoreAggregator`).
+*   **Extensible Ingestion:** The `PythonIngester` allowed us to handle BBQ's complex multi-file format without changing the core application.
+*   **Custom Aggregators:** The aggregator system enabled us to calculate highly specialized, benchmark-specific metrics like the BBQ bias score and display them in the final report.
 
 ## Advanced Use Case: Evaluating OpenTelemetry Traces
 
