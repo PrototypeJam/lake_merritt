@@ -6,6 +6,20 @@
   Your browser does not support HTML5 video.
 </video>
 
+------
+
+Introducing Lake Merritt
+
+<video controls playsinline preload="metadata" style="max-width:100%; height:auto;">
+  <source src="/media/Lake_Merritt_HelloWorld_h264.mp4" type="video/mp4; codecs=avc1.42E01E, mp4a.40.2">
+  <source src="/media/Lake_Merritt_HelloWorld_vp9.webm" type="video/webm; codecs=vp9,opus">
+  Sorry—your browser can’t play this video.
+</video>
+
+Alpha Version
+
+-------
+
 
 ## Overview
 
