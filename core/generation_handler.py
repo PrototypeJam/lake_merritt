@@ -101,6 +101,77 @@ async def handle_mode_b_generation(
     return items, generation_metadata
 
 
+# --- NEW: run Mode B on pre-ingested items (no CSV assumption) ---
+async def handle_mode_b_generation_from_items(
+    items: List[EvaluationItem],
+    generation_config: GenerationConfig,
+    user_context: str,
+    api_keys: Dict[str, str],
+    progress_callback: Optional[Callable[[int, int], None]] = None
+) -> Tuple[List[EvaluationItem], Dict[str, Any]]:
+    """
+    Same semantics as handle_mode_b_generation, but starts from a prepared
+    list of EvaluationItems instead of ingesting a CSV. This allows packs
+    with ingestion.type != 'csv' (e.g., 'python') to run Mode B.
+    """
+    logger.info(f"Starting Mode B generation from pre-ingested items in mode: {generation_config.mode.value}")
+    
+    # 1) Validation: ensure we have items
+    if not items:
+        raise ValueError("No items to generate over. Ingestion returned an empty list.")
+
+    # 2) Validate items for the requested generation mode
+    if generation_config.mode == GenerationMode.GENERATE_OUTPUTS:
+        missing_expected = [item.id for item in items if item.expected_output is None]
+        if missing_expected:
+            raise ValueError(
+                f"For 'Generate Outputs' mode, all items must have an 'expected_output'. "
+                f"Missing for items: {', '.join(missing_expected[:5])}{'...' if len(missing_expected) > 5 else ''}"
+            )
+
+    # 3) Build the (system) generation prompt from the user context
+    try:
+        system_prompt = await create_generation_prompt(generation_config, user_context, api_keys)
+        logger.info("Successfully created system prompt for data generation.")
+    except Exception as e:
+        logger.error(f"Prompt generation failed: {e}", exc_info=True)
+        raise ValueError(f"Prompt generation failed: {str(e)}")
+
+    # 4) Initialize metadata for the generation run
+    generation_metadata = {
+        "total_items": len(items),
+        "mode": generation_config.mode.value,
+        "used_meta_prompting": generation_config.use_meta_prompting,
+        "successful_generations": 0,
+        "failed_generations": 0,
+    }
+
+    # 5) Generate data row-by-row
+    try:
+        items = await generate_data_for_items(
+            items=items,
+            system_prompt=system_prompt,
+            config=generation_config,
+            api_keys=api_keys,
+            progress_callback=progress_callback
+        )
+        
+        # Tally successes and failures after generation
+        for item in items:
+            field_to_check = item.output if generation_config.mode == GenerationMode.GENERATE_OUTPUTS else item.expected_output
+            if field_to_check and not field_to_check.startswith("[ERROR"):
+                generation_metadata["successful_generations"] += 1
+            else:
+                generation_metadata["failed_generations"] += 1
+                    
+    except Exception as e:
+        logger.error(f"The generation process failed: {e}", exc_info=True)
+        raise ValueError(f"Data generation failed: {str(e)}")
+
+    logger.info(f"Generation complete. Success: {generation_metadata['successful_generations']}, Failures: {generation_metadata['failed_generations']}")
+    return items, generation_metadata
+
+
 def prepare_csv_for_download(
     items: List[EvaluationItem]
 ) -> str:

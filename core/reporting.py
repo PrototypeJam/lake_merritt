@@ -1,3 +1,4 @@
+# core/reporting.py
 """
 Reporting utilities for converting evaluation results to various formats.
 """
@@ -6,6 +7,7 @@ import copy
 import csv
 import io
 import json
+import re
 from datetime import datetime
 from typing import Any, Dict, List, Set
 
@@ -160,6 +162,27 @@ def generate_summary_report(results: EvaluationResults) -> str:
         f"- **Scorers Used**: {', '.join(results.summary_stats.keys())}"
     )
     report_lines.append("")
+
+    # Aggregate Metrics Section (NEW)
+    if "aggregates" in results.metadata and results.metadata["aggregates"]:
+        report_lines.append("## Aggregate Metrics")
+        report_lines.append("")
+        for agg_name, metrics in results.metadata["aggregates"].items():
+            # Clean up aggregator name for display
+            title = ' '.join(re.findall('[A-Z][^A-Z]*', agg_name)).replace('Aggregator', '').strip()
+            if not title:
+                title = agg_name
+            report_lines.append(f"### {title} Scorecard")
+            
+            if isinstance(metrics, dict) and "error" not in metrics:
+                for k, v in metrics.items():
+                    key_display = k.replace('_', ' ').title()
+                    report_lines.append(f"- **{key_display}**: {v}")
+            elif isinstance(metrics, dict) and "error" in metrics:
+                report_lines.append(f"- **Error**: {metrics['error']}")
+            else:
+                report_lines.append(f"- {metrics}")
+            report_lines.append("")
 
     # Summary Statistics
     report_lines.append("## Summary Statistics")

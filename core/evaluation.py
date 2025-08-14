@@ -17,7 +17,7 @@ from core.scoring import create_scorer, get_available_scorers
 from core.ingestion import CSVIngester
 from core.registry import ComponentRegistry
 from core.eval_pack.schema import GenerationMode # <-- Import GenerationMode
-from core.generation_handler import handle_mode_b_generation # <-- Import the handler
+from core.generation_handler import handle_mode_b_generation, handle_mode_b_generation_from_items # <-- Import both handlers
 
 
 logger = logging.getLogger(__name__)
@@ -122,13 +122,38 @@ async def run_evaluation_batch(
         
         logger.info("Pack has a 'generation' block. Running Mode B workflow.")
         
-        items, generation_metadata = await handle_mode_b_generation(
-            raw_data=raw_data,
-            generation_config=eval_pack.generation,
-            user_context=user_context,
-            api_keys=api_keys or {},
-            progress_callback=progress_callback,
-        )
+        if eval_pack.ingestion.type != "csv":
+            # Use the pack's declared ingester (e.g., 'python') to build items first
+            try:
+                ingester_cls = ComponentRegistry.get_ingester(eval_pack.ingestion.type)
+                ingester = ingester_cls()
+                ingestion_cfg = eval_pack.ingestion.config or {}
+                items = ingester.ingest(raw_data, ingestion_cfg)
+                logger.info(f"Ingested {len(items)} items via '{eval_pack.ingestion.type}' for generation.")
+            except Exception as e:
+                logger.error(f"Data ingestion failed in Mode B (non-CSV): {e}", exc_info=True)
+                raise ValueError(f"Data ingestion failed: {e}")
+
+            # Now run Mode B generation from items (no CSV assumption)
+            items, generation_metadata = await handle_mode_b_generation_from_items(
+                items=items,
+                generation_config=eval_pack.generation,
+                user_context=user_context,
+                api_keys=api_keys or {},
+                progress_callback=progress_callback
+            )
+        else:
+            # Keep legacy CSV path unchanged
+            items, generation_metadata = await handle_mode_b_generation(
+                raw_data=raw_data,
+                generation_config=eval_pack.generation,
+                user_context=user_context,
+                api_keys=api_keys or {},
+                progress_callback=progress_callback
+            )
+        
+        # Prevent re-ingestion later in the pipeline
+        raw_data = None
         
         # If the goal was just to create a dataset, stop here and return the results.
         if eval_pack.generation.mode == GenerationMode.GENERATE_EXPECTED_OUTPUTS:
@@ -141,7 +166,6 @@ async def run_evaluation_batch(
         
         # Otherwise, the generated items will proceed to the scoring pipeline.
         logger.info("Mode B 'Generate Outputs' complete. Proceeding to evaluation.")
-        raw_data = None # Prevent re-ingestion in the next step
 
     # ------------------------------------------------------------------
     # 3. Ingest raw data if it hasn't been generated
