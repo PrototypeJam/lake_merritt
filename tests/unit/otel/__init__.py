@@ -1,1 +1,0 @@
-# OTel tests
