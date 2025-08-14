@@ -1,25 +1,16 @@
 # [Lake Merritt](https://lakemerritt.streamlit.app/): AI Evaluation Workbench
 
-*A general-purpose, modular, and extensible platform for custom evaluations of AI models and applications.*
+*A general-purpose, modular, and extensible platform for custom evaluations of AI models and applications. Alpha Version*
 
-<video src="/media/Lake_Merritt_HelloWorld.mp4" controls autoplay muted style="max-width:100%;">
-  Your browser does not support HTML5 video.
-</video>
-
-------
-
-Introducing Lake Merritt
-
-<video controls playsinline preload="metadata" style="max-width:100%; height:auto;">
-  <source src="/media/Lake_Merritt_HelloWorld_h264.mp4" type="video/mp4; codecs=avc1.42E01E, mp4a.40.2">
-  <source src="/media/Lake_Merritt_HelloWorld_vp9.webm" type="video/webm; codecs=vp9,opus">
-  Sorry—your browser can’t play this video.
-</video>
-
-Alpha Version
+<iframe width="560" height="315" 
+        src="https://www.youtube.com/embed/F7gbPGuE5vg" 
+        title="Lake Merritt – Hello World" 
+        frameborder="0" 
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+        allowfullscreen>
+</iframe>
 
 -------
-
 
 ## Overview
 
