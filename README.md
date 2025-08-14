@@ -2,7 +2,10 @@
 
 *A general-purpose, modular, and extensible platform for custom evaluations of AI models and applications.*
 
-**NOTE:** Lake Merritt's core engine has been upgraded to a powerful and flexible **Eval Pack** architecture. This modular system is now the standard for all evaluations on the platform.
+<video src="/media/Lake_Merritt_HelloWorld.mp4" controls autoplay muted style="max-width:100%;">
+  Your browser does not support HTML5 video.
+</video>
+
 
 ## Overview
 
