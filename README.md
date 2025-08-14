@@ -137,7 +137,7 @@ Eval Packs enable sophisticated evaluation designs:
 
 ## What's New: Benchmark-in-a-Box with BBQ and FDL
 
-Lake Merritt's extensible architecture was designed to handle diverse and complex evaluation needs. To prove and showcase this power, we have added comprehensive, end-to-end support for two sophisticated benchmarks: the official **Bias Benchmark for Question Answering (BBQ)** and an initial, experimental **Fiduciary Duty of Loyalty (FDL)** evaluation inspired by BBQ's methodology.
+Lake Merritt's extensible architecture was designed to handle diverse and complex evaluation needs. To prove and showcase this power, we have added comprehensive, end-to-end support for two sophisticated benchmarks: the official **Bias Benchmark for Question Answering ([BBQ](https://github.com/PrototypeJam/lake_merritt/wiki/Measuring-Fairness-Measures)** and an initial, experimental **Fiduciary Duty of Loyalty (FDL)** evaluation inspired by BBQ's methodology.
 
 This new capability demonstrates how Lake Merritt can be used as a "Benchmark-in-a-Box," where a single Eval Pack can codify the entire workflow—from ingesting complex, multi-file datasets to running generation, scoring, and calculating specialized, benchmark-specific aggregate metrics.
 
