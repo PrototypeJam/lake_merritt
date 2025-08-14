@@ -1,4 +1,4 @@
-# [Lake Merritt](https://lakemerritt.streamlit.app/): AI Evaluation Workbench
+# [Lake Merritt](https://prototypejam.github.io/lake_merritt/): AI Evaluation Workbench
 
 *A general-purpose, modular, and extensible platform for custom evaluations of AI models and applications. Alpha Version*
 
