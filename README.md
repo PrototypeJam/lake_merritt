@@ -41,7 +41,7 @@ The guide covers six core workflows, designed to show you the full range and pow
 
 # Understanding the Two Evaluation Modes
 
-Before starting, it's important to understand the two fundamental workflows Lake Merritt supports. Your choice of mode determines what kind of data you need to provide.
+Before starting, it's important to understand the two fundamental workflows Lake Merritt supports. Your choice of mode determines what kind of data you need to provide, and the capabilities available.
 
 ### Mode A: Evaluate Existing Outputs
 This is the most common use case. You provide a dataset that already contains the model's performance data.
