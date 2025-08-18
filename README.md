@@ -26,9 +26,9 @@ The platform is designed for:
 
 The fastest way to understand Lake Merritt is to run an evaluation. Our hands-on guide will walk you through everything from a simple 60-second test to evaluating a complex AI agent, with no coding required for most examples.
 
-[**➡️ Click here for the Hands-On Quick Start Guide**](quick_start.md)
+[**➡️ Click here for the Hands-On Quick Start Guide**](quick_start)
 
-The guide covers six core workflows, designed to show you the full power of the platform:
+The guide covers six core workflows, designed to show you the full range and power of the platform:
 
 *   **The 60-Second Sanity Check:** Quickly grade a model's performance on a simple CSV file using an LLM-as-a-Judge.
 *   **The "Hold My Beer" Workflow:** Bootstrap a complete evaluation dataset from just a list of inputs and an idea.
