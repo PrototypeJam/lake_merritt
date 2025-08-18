@@ -313,6 +313,11 @@ pipeline:
 > **✨ WOW Moment:** This demonstrates the peak of Lake Merritt's power. A custom Python script performed a targeted analysis of a complex trace, and an LLM Judge used an expert-defined rubric to score the agent's planning and revision capabilities, all orchestrated by one declarative YAML file.
 
 ---
+
+**Note:** We are working up a [Spiral Bench](https://eqbench.com/spiral-bench.html) implementation as well, to demonstrate multi-agent and agent-human turn taking LLM-as-a-Judge evals.
+
+___
+
 ### Key Gotcha: Jinja2 Variables — Judge vs. Generation
 
 The prompt engine uses **Jinja2**, which requires **double curly braces `{{ ... }}`**. A common error is using single braces `{...}`, which will fail silently. There are two variable scopes to be aware of:
