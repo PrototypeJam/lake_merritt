@@ -1,6 +1,6 @@
 ## 🚀 Quick Start: From Zero to AI Evaluation in Minutes
 
-Welcome to Lake Merritt! This guide will walk you through six hands-on examples, from a simple 60-second check to evaluating a complex AI agent's behavior. No coding is required for the first four guides, and our advanced examples use just a single command-line script. Let's begin!
+Welcome to Lake Merritt!! This guide will walk you through six hands-on examples, from a simple 60-second check to evaluating a complex AI agent's behavior. No coding is required for the first four guides, and our advanced examples use just a single command-line script. Let's begin!
 
 ### One-Time Local Setup (Required)
 
