@@ -22,7 +22,24 @@ The platform is designed for:
 - **Repeatable & Shareable Workflows**: Codify your evaluation strategy in a version-controllable file that can be shared and reused across your team.
 - **Deep Analysis**: Analyze results through intuitive visualizations and detailed data exports.
 
-## Understanding the Two Evaluation Modes
+# 🚀 Quick Start: Try It Now!
+
+The fastest way to understand Lake Merritt is to run an evaluation. Our hands-on guide will walk you through everything from a simple 60-second test to evaluating a complex AI agent, with no coding required for most examples.
+
+[**➡️ Click here for the Hands-On Quick Start Guide**](quick_start.md)
+
+The guide covers six core workflows, designed to show you the full power of the platform:
+
+*   **The 60-Second Sanity Check:** Quickly grade a model's performance on a simple CSV file using an LLM-as-a-Judge.
+*   **The "Hold My Beer" Workflow:** Bootstrap a complete evaluation dataset from just a list of inputs and an idea.
+*   **Your First Eval Pack:** Codify your testing logic into a reusable, version-controllable YAML file for repeatable evaluations.
+*   **Replicating a Benchmark:** Run the official BBQ bias benchmark using the built-in dataset with just a few clicks.
+*   **Domain-Specific Compliance:** Test an AI's grasp of a complex legal principle (Fiduciary Duty of Loyalty).
+*   **Evaluating Agent Traces:** Go beyond simple I/O and score an agent's multi-step decision process from an OpenTelemetry trace.
+
+----------
+
+# Understanding the Two Evaluation Modes
 
 Before starting, it's important to understand the two fundamental workflows Lake Merritt supports. Your choice of mode determines what kind of data you need to provide.
 
