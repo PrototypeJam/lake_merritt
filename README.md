@@ -1,6 +1,6 @@
-# [Lake Merritt](https://prototypejam.github.io/lake_merritt/): AI Evaluation Workbench
+# [Lake Merritt](https://prototypejam.github.io/lake_merritt/): AI Evaluation Workbench. Alpha Version
 
-*A general-purpose, modular, and extensible platform for custom evaluations of AI models and applications. Alpha Version*
+*A general-purpose, modular, and extensible platform for custom evaluations of AI models and applications.*
 
 <iframe width="560" height="315" 
         src="https://www.youtube.com/embed/F7gbPGuE5vg" 
