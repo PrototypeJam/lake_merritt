@@ -140,7 +140,7 @@ pipeline:
       threshold: 0.8
       user_prompt_template: |
         Based on the input, is the actual output a helpful and correct
-        response? The expected output is just a reference. Score from 0.0 to 1.0.
+        response? The expected_output is just a reference. Score from 0.0 to 1.0.
 
         Input: {{ input }}
         Actual Output: {{ output }}
