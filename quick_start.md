@@ -258,9 +258,9 @@ pipeline:
 **Goal:** Run a sophisticated, expert-level evaluation on a multi-agent trace using a custom Python ingester and an LLM Judge with a detailed rubric.
 
 **Step 1: Get the Trace Data**
-1.  Go to this URL in your browser: [https://github.com/PrototypeJam/lake_merritt/wiki/agento_otel_example.json](https://github.com/PrototypeJam/lake_merritt/wiki/agento_otel_example.json)
+1.  Go to this URL in your browser: [https://gist.github.com/dazzaji/2db1f021674a9beba7c9fe99c9cb910e](https://gist.github.com/dazzaji/2db1f021674a9beba7c9fe99c9cb910e)
 2.  Copy the entire raw JSON content.
-3.  Create a new file on your computer named `agento_trace.json` and paste the content into it.
+3.  Create a new file on your computer named `agento_trace.json` and paste the content into it (ensure each span starts on a new line as seen in the "gist" linked above].
 
 **Step 2: Create the Eval Pack**
 This pack uses a Python script (`agento_analytical_ingester.py`) to parse the complex trace and extract the *initial plan* and the *final revised plan* for comparison.
