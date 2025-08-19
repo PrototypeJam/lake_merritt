@@ -325,7 +325,7 @@ ___
 
 ### Key Gotcha: Jinja2 Variables — Judge vs. Generation
 
-The prompt engine uses **Jinja2**, which requires **double curly braces `{{ ... }}`**. A common error is using single braces `{...}`, which will fail silently. There are two variable scopes to be aware of:
+The prompt engine uses **Jinja2**, which requires **double curly braces `{{ ... }}`**. A very common error is using single braces `{...}`, which will fail silently. There are two variable scopes to be aware of:
 
 -   **LLM-Judge prompts** (`user_prompt_template`): Use top-level variables like `{{ input }}`, `{{ output }}`, and `{{ expected_output }}`.
 -   **Generation templates** (`data_generation_template` in Mode B): Use item-scoped variables like `{{ item.input }}` and `{{ item.metadata.some_key }}`.
