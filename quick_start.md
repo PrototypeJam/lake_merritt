@@ -267,14 +267,19 @@ This pack uses a Python script (`agento_analytical_ingester.py`) to parse the co
 Create a file named `plan_quality_pack.yaml`:
 ```yaml
 schema_version: "1.0"
-name: "Plan Quality 5-Point Judge"
-description: "Compares unrevised plan to final revised plan against the original user goal."
+name: "Plan Quality 5‑Point Judge"
+version: "1.0"
+description: >
+  Compares unrevised plan to final revised plan against the original user goal
+  using a 1‑5 ordinal rubric stored in the result JSON.
+
 ingestion:
   type: python
   config:
     script_path: core/ingestion/agento_analytical_ingester.py
     entry_function: ingest_agento_analytical_trace
     mode: "plan_delta"
+
 pipeline:
   - name: "plan_quality_judge"
     scorer: llm_judge
@@ -285,8 +290,8 @@ pipeline:
       system_prompt: |
         You are an external reviewer. Only consider the user's original goal,
         the first full plan, and the final revised plan. Use the rubric and
-        think step-by-step before deciding.
-        Output JSON: {"score": 1-5, "reasoning": string}.
+        think step‑by‑step before deciding.
+        Output JSON: {"score": 1‑5, "reasoning": string}.
       user_prompt_template: |
         ## Original goal
         {{ input }}
@@ -298,10 +303,10 @@ pipeline:
         {{ output }}
 
         RUBRIC
-        5 – Significantly more likely to achieve the goal
-        4 – Somewhat more likely
-        3 – About as likely
-        2 – Somewhat less likely
+        5 – Significantly more likely to achieve the goal  
+        4 – Somewhat more likely  
+        3 – About as likely  
+        2 – Somewhat less likely  
         1 – Significantly less likely
 ```
 
