@@ -29,6 +29,8 @@ You're all set! You only need to do this once per session.
 
 ### Guide 1: The 60-Second Sanity Check (Manual Mode A)
 
+Follow along with this [companion video fo guide 1](https://youtu.be/B1J87tx_Uys)
+
 **Goal:** You have a CSV with your model's inputs, its generated outputs, and the correct answers. You want to quickly see how well it performed using an LLM-as-a-Judge.
 
 **Step 1: Create Your Data File**
