@@ -1,4 +1,4 @@
-# [Lake Merritt](https://prototypejam.github.io/lake_merritt/): AI Evaluation Workbench. Alpha Version
+# [Lake Merritt](https://prototypejam.github.io/lake_merritt/): AI Evaluation Workbench.
 
 *A general-purpose, modular, and extensible platform for custom evaluations of AI models and applications.*
 
@@ -14,7 +14,7 @@
 
 ## Overview
 
-[Lake Merritt](https://www.youtube.com/embed/F7gbPGuE5vg) provides a standardized yet flexible environment for evaluating AI systems. With its **Eval Pack** architecture, you can run everything from quick, simple comparisons using a spreadsheet to complex, multi-stage evaluation pipelines defined in a single configuration file.
+[Lake Merritt](https://www.youtube.com/embed/F7gbPGuE5vg) provides a standardized yet flexible environment for evaluating AI systems. With its **Eval Pack** architecture, you can run everything from quick, simple comparisons using a spreadsheet to complex, multi-stage evaluation pipelines defined in a single configuration file.  This is an Alpha Version.
 
 The platform is designed for:
 - **Rapid Prototyping**: Get feedback on your model with a simple CSV upload and a few clicks.
