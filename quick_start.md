@@ -1,4 +1,4 @@
-# 🚀 Quick Start: From Zero to AI Evaluation in Minutes
+# 🚀 Quick Start: From Zero to AI Evaluations in Minutes
 
 Welcome to Lake Merritt! This guide will walk you through seven hands-on examples, from a simple 60-second check to evaluating complex, multi-step agent behavior. No coding is required for the main guides, and our advanced examples use just a single command-line script. Let's begin!
 
@@ -140,7 +140,7 @@ pipeline:
       threshold: 0.8
       user_prompt_template: |
         Based on the input, is the actual output a helpful and correct
-        response? The expected output is just a reference. Score from 0.0 to 1.0.
+        response? The expected_output is just a reference. Score from 0.0 to 1.0.
 
         Input: {{ input }}
         Actual Output: {{ output }}
