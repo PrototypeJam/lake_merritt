@@ -1,6 +1,6 @@
 # 🚀 Quick Start: From Zero to AI Evaluations in Minutes
 
-Welcome to Lake Merritt! This guide will walk you through seven hands-on examples, from a simple 60-second check to evaluating complex, multi-step agent behavior. No coding is required for the main guides, and our advanced examples use just a single command-line script. Let's begin!
+Welcome to [Lake Merritt](https://prototypejam.github.io/lake_merritt/)! This guide will walk you through seven hands-on examples, from a simple 60-second check to evaluating complex, multi-step agent behavior. No coding is required for the main guides, and our advanced examples use just a single command-line script. Let's begin!
 
 ### Prerequisites and Installation
 
@@ -329,3 +329,7 @@ The prompt engine uses **Jinja2**, which requires **double curly braces `{{ ... 
 
 -   **LLM-Judge prompts** (`user_prompt_template`): Use top-level variables like `{{ input }}`, `{{ output }}`, and `{{ expected_output }}`.
 -   **Generation templates** (`data_generation_template` in Mode B): Use item-scoped variables like `{{ item.input }}` and `{{ item.metadata.some_key }}`.
+
+____________
+
+Quick Link Back to [Lake Merritt README](https://prototypejam.github.io/lake_merritt/)
