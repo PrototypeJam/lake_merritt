@@ -59,11 +59,11 @@ You'll be taken to the results page in under a minute! You can now click through
 
 ### Guide 2: Manual Data Generation for Evals (Mode B)
 
-Follow along with this [companion video fo guide 1](https://youtu.be/PUi27UDgOVw) for Guide 2
-
 This Mode B workflow is for when you have test inputs but need Lake Merritt to generate the outputs to be evaluated.
 
 #### Part A: Generate and Evaluate Model Outputs
+
+Follow along with this [companion video fo guide 1](https://youtu.be/PUi27UDgOVw) for Guide 2A
 
 **Goal:** You have a spreadsheet with inputs and the "gold standard" expected outputs. You want to test a new model or prompt by having Lake Merritt generate the `output` column and then immediately evaluate it.
 
@@ -88,6 +88,8 @@ input,expected_output
 > **✨ WOW Moment:** This is the standard workflow for testing a new model or prompt against an existing, curated evaluation dataset without running a separate generation script.
 
 #### Part B: The "Hold My Beer" Workflow
+
+Follow along with this [companion video fo guide 1](https://youtu.be/_NsQNCDttJk) for Guide 2B
 
 > **The Idea:** The "Hold my beer" approach is brazen because creating a high-quality `expected_output` for an eval dataset can take ages. This workflow lets you generate a "good enough" dataset—with both `expected_output` and `output`—in minutes. The goal isn't perfection; it's to get data in the right *shape* to rapidly prototype your evaluation logic. You can then iterate and improve the examples, knowing the end-to-end pipeline works.
 
