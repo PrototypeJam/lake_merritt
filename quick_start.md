@@ -29,7 +29,7 @@ You're all set! You only need to do this once per session.
 
 ### Guide 1: The 60-Second Sanity Check (Manual Mode A)
 
-Follow along with this [companion video fo guide 1](https://youtu.be/XbRh9VapcG0) for Guide 1
+Follow along with this [companion video fo Guide 1](https://youtu.be/XbRh9VapcG0).
 
 **Goal:** You have a CSV with your model's inputs, its generated outputs, and the correct answers. You want to quickly see how well it performed using an LLM-as-a-Judge.
 
@@ -63,7 +63,7 @@ This Mode B workflow is for when you have test inputs but need Lake Merritt to g
 
 #### Part A: Generate and Evaluate Model Outputs
 
-Follow along with this [companion video fo guide 1](https://youtu.be/PUi27UDgOVw) for Guide 2A
+Follow along with this [companion video for Guide 2A](https://youtu.be/PUi27UDgOVw).
 
 **Goal:** You have a spreadsheet with inputs and the "gold standard" expected outputs. You want to test a new model or prompt by having Lake Merritt generate the `output` column and then immediately evaluate it.
 
@@ -89,7 +89,7 @@ input,expected_output
 
 #### Part B: The "Hold My Beer" Workflow
 
-Follow along with this [companion video fo guide 1](https://youtu.be/_NsQNCDttJk) for Guide 2B
+Follow along with this [companion video fo Guide 2B](https://youtu.be/_NsQNCDttJk)
 
 > **The Idea:** The "Hold my beer" approach is brazen because creating a high-quality `expected_output` for an eval dataset can take ages. This workflow lets you generate a "good enough" dataset—with both `expected_output` and `output`—in minutes. The goal isn't perfection; it's to get data in the right *shape* to rapidly prototype your evaluation logic. You can then iterate and improve the examples, knowing the end-to-end pipeline works.
 
@@ -126,6 +126,8 @@ input
 ---
 
 ### Guide 3: Your First Eval Pack (Power & Repeatability)
+
+Follow along with this [companion video fo Guide 3](https://youtu.be/D6LMdSL7fOU)
 
 **Goal:** Take the manual test from Guide 1 and codify it into a reusable, shareable Eval Pack.
 
@@ -167,6 +169,8 @@ pipeline:
 
 ### Guide 4: Replicating a Real Benchmark (BBQ)
 
+Follow along with this [companion video fo Guide 4](https://youtu.be/EgwyUehrVVA)
+
 **Goal:** Run a published academic benchmark for measuring social bias in AI models *without downloading any external data*.
 
 **Step 1: Run the BBQ Eval Pack**
@@ -183,6 +187,8 @@ Go to the **"Download Center"** ⬇️ and download the **Summary Report**. You 
 ---
 
 ### Guide 5: Domain-Specific Compliance (Fiduciary Duty)
+
+Follow along with this [companion video fo Guide 5](https://youtu.be/kT95mZs83AU)
 
 **Goal:** Run a custom, expert-level evaluation that tests an AI's understanding of a complex legal and ethical principle.
 
@@ -207,6 +213,8 @@ Check the **Summary Report** in the **Download Center** ⬇️. You'll find an "
 ---
 
 ### Guide 6: Evaluating a Simple Agent Trace (Generic OTEL)
+
+Follow along with this [companion video fo Guide 6](https://youtu.be/Ch3ILgeO0og)
 
 **Goal:** Evaluate an AI agent's final outcome by analyzing its decision-making process from a standard OpenTelemetry (OTEL) trace.
 
@@ -260,6 +268,8 @@ pipeline:
 ---
 
 ### Guide 7: Evaluating a Complex Agent Plan (Python Ingester)
+
+Follow along with this [companion video fo Guide 7](https://youtu.be/ZNQq-wiA6JI)
 
 **Goal:** Run a sophisticated, expert-level evaluation on a multi-agent trace using a custom Python ingester and an LLM Judge with a detailed rubric.
 
