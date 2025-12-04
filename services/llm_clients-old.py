@@ -127,21 +127,13 @@ class OpenAIClient(BaseLLMClient):
     ) -> str:
         """Generate response using OpenAI API."""
         try:
-            # Handle parameter differences for newer models (GPT-5, o1)
-            # These models use 'max_completion_tokens' instead of 'max_tokens'
-            api_kwargs = {
-                "model": model,
-                "messages": messages,
-                "temperature": temperature,
+            response = await self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
                 **kwargs,
-            }
-
-            if model.startswith("gpt-5") or model.startswith("o1"):
-                api_kwargs["max_completion_tokens"] = max_tokens
-            else:
-                api_kwargs["max_tokens"] = max_tokens
-
-            response = await self.client.chat.completions.create(**api_kwargs)
+            )
             return response.choices[0].message.content
         except Exception as e:
             logger.error(f"OpenAI API error: {e}")
@@ -157,25 +149,13 @@ class OpenAIClient(BaseLLMClient):
     ) -> Dict[str, Any]:
         """Generate structured output using function calling."""
         try:
-            # Handle parameter differences for newer models (GPT-5, o1)
-            api_kwargs = {
-                "model": model,
-                "messages": messages,
-                "temperature": temperature,
-                "response_format": {"type": "json_object"},
+            response = await self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                response_format={"type": "json_object"},
                 **kwargs,
-            }
-
-            if model.startswith("gpt-5") or model.startswith("o1"):
-                api_kwargs["max_completion_tokens"] = kwargs.get("max_tokens", 1000)
-                # Remove max_tokens if it was in kwargs to avoid error
-                api_kwargs.pop("max_tokens", None) 
-            else:
-                 # Ensure max_tokens is present for older models if not in kwargs
-                 if "max_tokens" not in api_kwargs:
-                     api_kwargs["max_tokens"] = 1000
-
-            response = await self.client.chat.completions.create(**api_kwargs)
+            )
 
             import json
 
@@ -186,12 +166,7 @@ class OpenAIClient(BaseLLMClient):
 
     def validate_api_key(self) -> bool:
         """Validate OpenAI API key."""
-        # Support both regular keys (sk-) and service account keys (sk-svcacct-, sk-proj-)
-        return bool(self.api_key and (
-            self.api_key.startswith("sk-") or 
-            self.api_key.startswith("sk-svcacct-") or 
-            self.api_key.startswith("sk-proj-")
-        ))
+        return bool(self.api_key and self.api_key.startswith("sk-"))
 
 
 class AnthropicClient(BaseLLMClient):
