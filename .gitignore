@@ -208,3 +208,6 @@ workspaces/default/*.pyc
 workspaces/_shared/*.pyc
 *.pack.yaml.local
 *.pack.yml.local
+
+# Special Projects
+D2/

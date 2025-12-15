@@ -3,8 +3,8 @@
 # git pull origin restore-lake-merritt
 
 
-# rm -rf venv (remove old broken virtual environment)
-# uv venv venv (maken good new virtual environment)
+# rm -rf venv # (remove old broken virtual environment)
+# uv venv venv # (maken good new virtual environment)
 
 # ___ Do Above for Working Snapshot Branch THEN Continue With Below___
 
