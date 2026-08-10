@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Lake Merritt · Live Agent Evaluation — Demo</title>
+<link rel="stylesheet" href="assets/styles.css"/>
+</head>
+<body>
+
+<div class="ribbon">SIMULATED PLAYBACK OF REAL DATA · no live model calls · DIAGNOSTIC — not an official LegalQuants score</div>
+
+<header>
+  <div class="brand">
+    <div class="logo"></div>
+    <div>
+      <h1>Live Agent Evaluation</h1>
+      <div class="sub">Run a legal-AI loop · watch OpenTelemetry become evidence · score the finished work</div>
+    </div>
+  </div>
+  <nav>
+    <button class="tab on" data-screen="setup">1 · Setup</button>
+    <button class="tab" data-screen="run">2 · Live Run</button>
+    <button class="tab" data-screen="results">3 · Results</button>
+    <button class="tab" data-screen="compare">4 · Compare</button>
+  </nav>
+</header>
+
+<!-- ══════════════════ SETUP ══════════════════ -->
+<section id="setup" class="screen on">
+  <div class="wrap">
+    <h2 class="lede">Configure your run</h2>
+    <p class="hint">Everything below is a real control. In the live product these drive an actual sandboxed loop; here they drive a faithful replay of a real LegalQuants run.</p>
+
+    <!-- MODE -->
+    <div class="block">
+      <div class="blockhead"><span class="num">1</span><h3>Mode</h3><span class="why">Demo costs nothing. Live spends your key.</span></div>
+      <div class="cards two">
+        <label class="card sel"><input type="radio" name="mode" value="demo" checked>
+          <div class="ct"><div class="cl">Demo <span class="tag free">no key · free</span></div>
+          <div class="cd">Replay a real captured run and its real evaluations. Nothing is called. Perfect for showing someone how it works.</div></div></label>
+        <label class="card"><input type="radio" name="mode" value="live">
+          <div class="ct"><div class="cl">Live <span class="tag paid">your key · metered</span></div>
+          <div class="cd">Run the pinned public LegalQuants loop for real in a disposable sandbox, and judge it for real.</div></div></label>
+      </div>
+    </div>
+
+    <!-- KEYS -->
+    <div class="block" id="keyblock" hidden>
+      <div class="blockhead"><span class="num">2</span><h3>Your API keys</h3><span class="why">Never stored. Session-scoped. Wiped when the run ends.</span></div>
+      <div class="grid2">
+        <div><label class="lbl">Loop key <em>(runs the agent)</em></label><input class="in" type="password" placeholder="sk-ant-…"/></div>
+        <div><label class="lbl">Judge key <em>(runs the evaluation)</em></label><input class="in" type="password" placeholder="sk-ant-… (may differ)"/>
+          <div class="micro">Separate on purpose — you may want a different family judging than building.</div></div>
+      </div>
+    </div>
+
+    <!-- MODELS -->
+    <div class="block">
+      <div class="blockhead"><span class="num">3</span><h3>Models</h3><span class="why">Two independent choices.</span></div>
+      <div class="grid2">
+        <div>
+          <label class="lbl">Loop model <em>— builds the answer</em></label>
+          <div id="loopModels" class="pickers"></div>
+        </div>
+        <div>
+          <label class="lbl">Judge model <em>— scores the answer</em></label>
+          <div id="judgeModels" class="pickers"></div>
+          <div class="micro">Tip: a different family as judge reduces same-family bias.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCOPE -->
+    <div class="block">
+      <div class="blockhead"><span class="num">4</span><h3>How much to run</h3><span class="why">Cost scales with scope.</span></div>
+      <div class="cards four" id="scopes"></div>
+    </div>
+
+    <!-- QUESTIONS -->
+    <div class="block">
+      <div class="blockhead"><span class="num">5</span><h3>Question(s)</h3><span class="why" id="qhint">Pick one.</span></div>
+      <div id="questions" class="qgrid"></div>
+    </div>
+
+    <!-- LAUNCH -->
+    <div class="launch">
+      <div class="est">
+        <div class="estrow"><span>Mode</span><b id="sMode">Demo</b></div>
+        <div class="estrow"><span>Loop / Judge</span><b id="sModels">—</b></div>
+        <div class="estrow"><span>Scope</span><b id="sScope">—</b></div>
+        <div class="estrow"><span>Questions</span><b id="sQs">—</b></div>
+        <div class="estrow big"><span>Estimated cost</span><b id="sCost">$0.00</b></div>
+      </div>
+      <button id="go" class="go">▶ Start run</button>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ LIVE RUN ══════════════════ -->
+<section id="run" class="screen">
+  <div class="runbar">
+    <div class="pill" id="rstatus"><span class="dot"></span><span>idle</span></div>
+    <div class="rmeta" id="rmeta">—</div>
+    <div class="sp"></div>
+    <label class="speed">Speed
+      <select id="speed"><option value="120">1×</option><option value="45" selected>3×</option><option value="12">10×</option></select>
+    </label>
+    <button id="stop" class="ghost">■ Stop</button>
+  </div>
+
+  <div class="runcols">
+    <!-- LEFT: what the loop is doing -->
+    <div class="panel tall">
+      <div class="ph"><h3>What the loop is doing</h3><span class="ct" id="turncount">0 turns</span></div>
+      <div id="loopfeed" class="feed"></div>
+    </div>
+
+    <!-- MIDDLE: telemetry -->
+    <div class="col">
+      <div class="panel">
+        <div class="ph"><h3>Telemetry</h3><span class="ct" id="spanct">0 spans</span></div>
+        <div class="kv"><span>Spans / sec</span><b id="rate">0.0</b></div>
+        <div class="kv"><span>Budget</span><b id="budget">0 / 133</b></div>
+        <div class="track"><div class="fill" id="budgetfill"></div></div>
+        <div class="chips" id="chips"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><h3>Live checks</h3><span class="ct">deterministic</span></div>
+        <div id="checks" class="checks"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: evals as they happen -->
+    <div class="col">
+      <div class="panel">
+        <div class="ph"><h3>Evidence accumulating</h3><span class="ct">not a score</span></div>
+        <div id="meters"></div>
+      </div>
+      <div class="panel final">
+        <div class="ph"><h3>Evaluation</h3><span class="ct" id="evalstate">waiting</span></div>
+        <div id="evalpending" class="pending">
+          A rubric score is a judgment about the <em>whole</em> session.<br/>
+          It appears once — at completion — never as a number that wiggles mid-run.
+        </div>
+        <div id="evalrunning" class="judging" hidden>
+          <div class="spinner"></div>
+          <div id="judgesteps"></div>
+        </div>
+        <div id="evaldone" hidden>
+          <div class="scorerow"><span class="score" id="composite">—</span><span class="vs">vs bar <b id="bar">82</b></span></div>
+          <div class="dims" id="dims"></div>
+          <button class="ghost wide" data-screen="results">See full report →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ RESULTS ══════════════════ -->
+<section id="results" class="screen">
+  <div class="wrap">
+    <h2 class="lede">Diagnostic report</h2>
+    <div id="report"></div>
+  </div>
+</section>
+
+<!-- ══════════════════ COMPARE ══════════════════ -->
+<section id="compare" class="screen">
+  <div class="wrap">
+    <h2 class="lede">Compare evaluations</h2>
+    <p class="hint">Real eval records. Three questions you can only answer by running more than once.</p>
+    <div id="cmp"></div>
+  </div>
+</section>
+
+<footer>Simulated playback of real public data · Lake Merritt × LegalQuants · diagnostic only</footer>
+
+<script src="assets/data.js"></script>
+<script src="assets/run.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
