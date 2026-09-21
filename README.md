@@ -1,4 +1,4 @@
-# [Lake Merritt](https://prototypejam.github.io/lake_merritt/): AI Evaluation Workbench
+# [Lake Merritt](https://www.civics.com/evals) AI Evaluation Workbench
 
 *A general-purpose, modular, and extensible platform for custom evaluations of AI models and applications. Alpha Version*
 
