@@ -1,3 +1,4 @@
+{% raw %}
 # [Lake Merritt](https://prototypejam.github.io/lake_merritt/): AI Evaluation Workbench.
 
 *A general-purpose, modular, and extensible platform for custom evaluations of AI models and applications.*
@@ -478,3 +479,4 @@ Deeper Dives into Roadmap Items:
 * [IMPORTANT ENHANCEMENTS (Feature Backlog)](https://github.com/PrototypeJam/lake_merritt/issues/38)
 * [NON-URGENT FIXES [Backlog for Future Sprints](https://github.com/PrototypeJam/lake_merritt/issues/37)
 * Also see: [Add Backend Database](https://github.com/PrototypeJam/lake_merritt/issues/45), [Custom Scorers Without Adding to Registry](https://github.com/PrototypeJam/lake_merritt/issues/59), [Less awful frontend](https://github.com/PrototypeJam/lake_merritt/issues/64), and [Concept for refactoring OpenAI Evals (via data, config, and sometimes grading logic) into simple Eval Packs](https://github.com/PrototypeJam/lake_merritt/issues/63)
+{% endraw %}

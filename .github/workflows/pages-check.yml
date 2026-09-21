@@ -1,0 +1,40 @@
+name: Pages content check
+
+on:
+  pull_request:
+    branches: [gh-pages]
+  push:
+    branches: [gh-pages]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require Markdown rendering
+        run: test ! -e .nojekyll
+      - name: Build with the GitHub Pages Jekyll builder
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./
+          destination: ./_site
+      - name: Check homepage, guides, and unchanged demo assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s _site/index.html
+          grep -q 'AI Evaluation Workbench' _site/index.html
+          for page in index quick_start quick_start_2 quick_start_default; do
+            test -s "_site/$page.html"
+            grep -Fq '{{ input }}' "_site/$page.html"
+            if grep -Fq '{% raw %}' "_site/$page.html"; then
+              echo "Unprocessed Liquid markup in $page" >&2
+              exit 1
+            fi
+          done
+          while IFS= read -r -d '' file; do
+            cmp "$file" "_site/$file"
+          done < <(find demo -type f ! -name '*.md' -print0)

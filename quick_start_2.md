@@ -1,3 +1,4 @@
+{% raw %}
 # 🚀 Quick Start: From Zero to AI Evaluation in Minutes
 
 Welcome to Lake Merritt! This guide will walk you through six hands-on examples, from a simple 60-second check to evaluating AI agent traces. No coding is required for the first four guides; advanced examples use just a single command-line script. Let's begin!
@@ -291,3 +292,4 @@ Now that you've mastered the basics:
 - Join our community to share your Eval Packs and learn from others
 
 Welcome to the future of AI evaluation – systematic, repeatable, and accessible to everyone!
+{% endraw %}

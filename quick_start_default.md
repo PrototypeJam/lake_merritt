@@ -1,3 +1,4 @@
+{% raw %}
 ## 🚀 Quick Start: From Zero to AI Evaluation in Minutes
 
 Welcome to Lake Merritt!! This guide will walk you through six hands-on examples, from a simple 60-second check to evaluating a complex AI agent's behavior. No coding is required for the first four guides, and our advanced examples use just a single command-line script. Let's begin!
@@ -254,3 +255,4 @@ pipeline:
 - **"No JSON object found in LLM response":** Judge prompts must use double curly braces `{{ ... }}`.
 - **BBQ ingester can't find data:** The path file (`bbq_path_cloud.txt`) must correctly point to the folder containing the dataset.
 - **Memory errors:** Large datasets may require more than the default resources on cloud platforms.
+{% endraw %}
